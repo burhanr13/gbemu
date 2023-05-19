@@ -54,4 +54,6 @@ void init_cpu(struct gb* master, struct sm83* cpu);
 
 void cpu_clock(struct sm83* cpu);
 
+void print_cpu_state(struct sm83* cpu);
+
 #endif

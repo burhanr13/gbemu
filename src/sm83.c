@@ -1,5 +1,6 @@
 #include "sm83.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -664,4 +665,14 @@ void cpu_clock(struct sm83* cpu) {
         run_instruction(cpu);
     }
     if (cpu->cycles) cpu->cycles--;
+}
+
+void print_cpu_state(struct sm83* cpu) {
+    fprintf(stderr,
+            "A: %02X F: %02X B: %02X C: %02X D: %02X E: %02X H: %02X "
+            "L: %02X SP: %04X PC: 00:%04X (%02X %02X %02X %02X)\n",
+            cpu->A, cpu->F, cpu->B, cpu->C, cpu->D, cpu->E, cpu->H, cpu->L,
+            cpu->SP, cpu->PC, read8(cpu->master, cpu->PC),
+            read8(cpu->master, cpu->PC + 1), read8(cpu->master, cpu->PC + 2),
+            read8(cpu->master, cpu->PC + 3));
 }
