@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT) running = 0;
         }
-    
+
         clock_timers(gb, cycle);
         cpu_clock(&gb->cpu);
         cycle++;
