@@ -18,6 +18,15 @@ struct cartridge {
 
     u8 (*rom)[ROM_BANK_SIZE];
     u8 (*ram)[ERAM_BANK_SIZE];
+
+    union {
+        struct {
+            u8 ram_enable;
+            u8 cur_bank_5;
+            u8 cur_bank_2;
+            u8 mode;
+        } mbc1;
+    };
 };
 
 struct cartridge* cart_create(char* filename);
@@ -25,6 +34,6 @@ void cart_destroy(struct cartridge* cart);
 
 u8 cart_read(struct cartridge* cart, u16 addr, enum cart_region region);
 void cart_write(struct cartridge* cart, u16 addr, enum cart_region region,
-                u8 val);
+                u8 data);
 
 #endif

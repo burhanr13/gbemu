@@ -35,6 +35,7 @@ u8 read8(struct gb* bus, u16 addr) {
     }
     if (addr < 0xff80) {
         if (addr == 0xff0f) return bus->IF;
+        if (addr == 0xff44) return 0x90;
         return 0xff; // io registers
     }
     if (addr < 0xffff) {
@@ -82,7 +83,10 @@ void write8(struct gb* bus, u16 addr, u8 data) {
     }
     if (addr < 0xff80) {
         if (addr == 0xff0f) bus->IF = data;
-        if (addr == 0xff01) printf("%c", data);
+        if (addr == 0xff01) {
+            printf("%c", data);
+            fflush(stdout);
+        }
         return;
     }
     if (addr < 0xffff) {

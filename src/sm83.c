@@ -8,7 +8,11 @@
 void init_cpu(struct gb* master, struct sm83* cpu) {
     memset(cpu, 0, sizeof(*cpu));
     cpu->master = master;
-    cpu->A = 0x01;
+    cpu->AF = 0x01b0;
+    cpu->BC = 0x0013;
+    cpu->DE = 0x00d8;
+    cpu->HL = 0x014d;
+    cpu->SP = 0xfffe;
     cpu->PC = 0x0100;
 }
 
@@ -20,18 +24,24 @@ void set_flag(struct sm83* cpu, int flag, int val) {
     }
 }
 
-void resolve_flags(struct sm83* cpu, int flags, u8 pre, u8 post) {
+void resolve_flags(struct sm83* cpu, int flags, u8 pre, u8 post, int carry) {
     set_flag(cpu, FN, flags & FN);
     if (flags & FZ) {
         set_flag(cpu, FZ, post == 0);
     }
     if (flags & FH) {
-        if (flags & FN) set_flag(cpu, FH, (pre & 0x0f) < (post & 0x0f));
-        else set_flag(cpu, FH, (pre & 0x0f) > (post & 0x0f));
+        if (flags & FN)
+            set_flag(cpu, FH,
+                     (pre & 0x0f) < (post & 0x0f) ||
+                         ((pre & 0x0f) == (post & 0x0f) && carry));
+        else
+            set_flag(cpu, FH,
+                     (pre & 0x0f) > (post & 0x0f) ||
+                         ((pre & 0x0f) == (post & 0x0f) && carry));
     }
     if (flags & FC) {
-        if (flags & FN) set_flag(cpu, FC, pre < post);
-        else set_flag(cpu, FC, pre > post);
+        if (flags & FN) set_flag(cpu, FC, pre < post || (pre == post && carry));
+        else set_flag(cpu, FC, pre > post || (pre == post && carry));
     }
 }
 
@@ -140,19 +150,19 @@ void run_alu(struct sm83* cpu, u8 opcode, u8 op2) {
     switch ((opcode & 0b00111000) >> 3) {
         case 0: // ADD
             cpu->A += op2;
-            resolve_flags(cpu, FZ | FH | FC, pre, cpu->A);
+            resolve_flags(cpu, FZ | FH | FC, pre, cpu->A, 0);
             break;
         case 1: // ADC
             cpu->A += op2 + (cpu->F & FC ? 1 : 0);
-            resolve_flags(cpu, FZ | FH | FC, pre, cpu->A);
+            resolve_flags(cpu, FZ | FH | FC, pre, cpu->A, 1);
             break;
         case 2: // SUB
             cpu->A -= op2;
-            resolve_flags(cpu, FZ | FN | FH | FC, pre, cpu->A);
+            resolve_flags(cpu, FZ | FN | FH | FC, pre, cpu->A, 0);
             break;
         case 3: // SBC
             cpu->A -= op2 + (cpu->F & FC ? 1 : 0);
-            resolve_flags(cpu, FZ | FN | FH | FC, pre, cpu->A);
+            resolve_flags(cpu, FZ | FN | FH | FC, pre, cpu->A, 1);
             break;
         case 4: // AND
             cpu->A &= op2;
@@ -171,7 +181,7 @@ void run_alu(struct sm83* cpu, u8 opcode, u8 op2) {
             cpu->F &= ~(FN | FH | FC);
             break;
         case 7: // CP
-            resolve_flags(cpu, FZ | FN | FH | FC, cpu->A, cpu->A - op2);
+            resolve_flags(cpu, FZ | FN | FH | FC, cpu->A, cpu->A - op2, 0);
             break;
     }
 }
@@ -233,9 +243,8 @@ void run_instruction(struct sm83* cpu) {
                             cpu->cycles += 8;
                             u16 prev = cpu->HL;
                             cpu->HL += *getr16mod(cpu, opcode);
-                            set_flag(cpu, FN, 0);
-                            set_flag(cpu, FH, (cpu->HL & 0xff) < (prev & 0xff));
-                            set_flag(cpu, FC, cpu->HL < prev);
+                            resolve_flags(cpu, FH | FC, prev >> 8, cpu->H,
+                                          (prev & 0x00ff) > cpu->L);
                             break;
                         case 0b0010: // LD (rr), A
                             cpu->cycles += 8;
@@ -273,7 +282,7 @@ void run_instruction(struct sm83* cpu) {
                                 post = pre + 1;
                                 write8(cpu->master, cpu->HL, post);
                             }
-                            resolve_flags(cpu, FZ | FH, pre, post);
+                            resolve_flags(cpu, FZ | FH, pre, post, 0);
                             break;
                         case 1: // DEC r
                             cpu->cycles += 4;
@@ -287,7 +296,7 @@ void run_instruction(struct sm83* cpu) {
                                 post = pre - 1;
                                 write8(cpu->master, cpu->HL, post);
                             }
-                            resolve_flags(cpu, FZ | FN | FH, pre, post);
+                            resolve_flags(cpu, FZ | FN | FH, pre, post, 0);
                             break;
                         case 2: // LD r, n
                             cpu->cycles += 8;
@@ -330,23 +339,26 @@ void run_instruction(struct sm83* cpu) {
                                     break;
                                 case 4: // DAA
                                     cpu->cycles += 4;
+                                    u8 correction = 0x00;
                                     if (cpu->F & FN) {
                                         if (cpu->F & FH) {
-                                            cpu->A -= 0x06;
+                                            correction |= 0x06;
                                         }
                                         if (cpu->F & FC) {
-                                            cpu->A -= 0x06;
+                                            correction |= 0x60;
                                             cpu->F |= FC;
                                         }
+                                        cpu->A -= correction;
                                     } else {
                                         if (cpu->F & FH ||
                                             (cpu->A & 0xf) > 0x9) {
-                                            cpu->A += 0x06;
+                                            correction |= 0x06;
                                         }
                                         if (cpu->F & FC || cpu->A > 0x99) {
-                                            cpu->A += 0x60;
+                                            correction |= 0x60;
                                             cpu->F |= FC;
                                         }
+                                        cpu->A += correction;
                                     }
                                     cpu->F &= ~FH;
                                     set_flag(cpu, FZ, cpu->A == 0);
@@ -418,10 +430,9 @@ void run_instruction(struct sm83* cpu) {
                                 disp = read8(cpu->master, cpu->PC++);
                                 u16 pre = cpu->SP;
                                 cpu->SP += disp;
-                                cpu->F &= ~(FZ | FN);
-                                set_flag(cpu, FH,
-                                         (pre & 0x00ff) > (cpu->SP & 0x00ff));
-                                set_flag(cpu, FC, pre > cpu->SP);
+                                cpu->F &= ~FZ;
+                                resolve_flags(cpu, FH | FC, pre & 0x00ff,
+                                              cpu->SP & 0x00ff, 0);
                                 break;
                             case 2: // LD A, (FF00+n)
                                 cpu->cycles += 12;
@@ -433,11 +444,9 @@ void run_instruction(struct sm83* cpu) {
                                 cpu->cycles += 12;
                                 disp = read8(cpu->master, cpu->PC++);
                                 cpu->HL = cpu->SP + disp;
-                                cpu->F &= ~(FZ | FN);
-                                set_flag(cpu, FH,
-                                         (cpu->SP & 0x00ff) >
-                                             (cpu->HL & 0x00ff));
-                                set_flag(cpu, FC, cpu->SP > cpu->HL);
+                                cpu->F &= ~FZ;
+                                resolve_flags(cpu, FH | FC, cpu->SP & 0x00ff,
+                                              cpu->L, 0);
                                 break;
                         }
                     }
@@ -446,6 +455,7 @@ void run_instruction(struct sm83* cpu) {
                     if ((opcode & 0b00001000) == 0) { // POP rr
                         cpu->cycles += 12;
                         *getr16stack(cpu, opcode) = pop(cpu);
+                        cpu->F &= 0xf0;
                     } else {
                         switch ((opcode & 0b00110000) >> 4) {
                             case 0: // RET
@@ -634,7 +644,7 @@ void run_instruction(struct sm83* cpu) {
 
 void cpu_clock(struct sm83* cpu) {
     if (cpu->stop || cpu->ill) return;
-    if(cpu->master->IME && (cpu->master->IE & cpu->master->IF)) {
+    if (cpu->master->IME && (cpu->master->IE & cpu->master->IF)) {
         cpu->cycles += 20;
         cpu->master->IME = 0;
         int i;

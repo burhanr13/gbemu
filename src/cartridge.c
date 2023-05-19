@@ -61,7 +61,8 @@ struct cartridge* cart_create(char* filename) {
     cart->rom_banks = rom_banks;
     cart->ram_banks = ram_banks;
     cart->rom = malloc(cart->rom_banks * ROM_BANK_SIZE);
-    if(fread(cart->rom,ROM_BANK_SIZE,cart->rom_banks,fp) < cart->rom_banks){
+    if (fread(cart->rom, ROM_BANK_SIZE, cart->rom_banks, fp) <
+        cart->rom_banks) {
         free(cart->rom);
         free(cart);
         fclose(fp);
@@ -92,17 +93,77 @@ u8 cart_read(struct cartridge* cart, u16 addr, enum cart_region region) {
                     if (cart->ram_banks) return cart->ram[0][addr];
                     else return 0xff;
             }
+        case MBC1:
+            switch (region) {
+                case CART_ROM0:
+                    if (cart->mbc1.mode == 0) {
+                        return cart->rom[0][addr];
+                    } else {
+                        if (cart->rom_banks > 32) {
+                            return cart->rom[(cart->mbc1.cur_bank_2 << 5) &
+                                             (cart->rom_banks - 1)][addr];
+                        } else {
+                            return cart->rom[0][addr];
+                        }
+                    }
+                case CART_ROM1:
+                    return cart->rom
+                        [(cart->mbc1.cur_bank_5 ? cart->mbc1.cur_bank_5 : 1) |
+                         ((cart->rom_banks > 32) ? (cart->mbc1.cur_bank_2 << 5)
+                                                 : 0) &
+                             (cart->rom_banks - 1)][addr];
+                case CART_RAM:
+                    if (cart->ram_banks && cart->mbc1.ram_enable) {
+                        if (cart->mbc1.mode == 0 || cart->rom_banks > 32) {
+                            return cart->ram[0][addr];
+                        } else {
+                            return cart->ram[cart->mbc1.cur_bank_2 &
+                                             (cart->ram_banks - 1)][addr];
+                        }
+                    } else return 0xff;
+            }
         default:
             return 0xff;
     }
 }
 
 void cart_write(struct cartridge* cart, u16 addr, enum cart_region region,
-                u8 val) {
+                u8 data) {
     if (!cart) return;
     switch (cart->mapper) {
         case MBC0:
-            if (region == CART_RAM && cart->ram_banks) cart->ram[0][addr] = val;
+            if (region == CART_RAM && cart->ram_banks)
+                cart->ram[0][addr] = data;
+            break;
+        case MBC1:
+            switch (region) {
+                case CART_ROM0:
+                    if (addr < 0x2000) {
+                        if (data == 0x0a || data == 0x00)
+                            cart->mbc1.ram_enable = data;
+                    } else {
+                        cart->mbc1.cur_bank_5 = data & 0b00011111;
+                    }
+                    break;
+                case CART_ROM1:
+                    if (addr < 0x2000) {
+                        cart->mbc1.cur_bank_2 = data & 0b00000011;
+                    } else {
+                        if (data == 0x01 || data == 0x00)
+                            cart->mbc1.mode = data;
+                    }
+                    break;
+                case CART_RAM:
+                    if (cart->ram_banks && cart->mbc1.ram_enable) {
+                        if (cart->mbc1.mode == 0 || cart->rom_banks > 32) {
+                            cart->ram[0][addr] = data;
+                        } else {
+                            cart->ram[cart->mbc1.cur_bank_2 &
+                                      (cart->ram_banks - 1)][addr] = data;
+                        }
+                    }
+                    break;
+            }
             break;
         default:
             return;
