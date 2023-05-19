@@ -154,7 +154,7 @@ void run_alu(struct sm83* cpu, u8 opcode, u8 op2) {
             break;
         case 1: // ADC
             cpu->A += op2 + (cpu->F & FC ? 1 : 0);
-            resolve_flags(cpu, FZ | FH | FC, pre, cpu->A, 1);
+            resolve_flags(cpu, FZ | FH | FC, pre, cpu->A, cpu->F & FC);
             break;
         case 2: // SUB
             cpu->A -= op2;
@@ -162,7 +162,7 @@ void run_alu(struct sm83* cpu, u8 opcode, u8 op2) {
             break;
         case 3: // SBC
             cpu->A -= op2 + (cpu->F & FC ? 1 : 0);
-            resolve_flags(cpu, FZ | FN | FH | FC, pre, cpu->A, 1);
+            resolve_flags(cpu, FZ | FN | FH | FC, pre, cpu->A, cpu->F & FC);
             break;
         case 4: // AND
             cpu->A &= op2;
