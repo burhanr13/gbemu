@@ -40,6 +40,7 @@ struct sm83 {
     };
     u16 SP;
     u16 PC;
+    int IME;
 
     int cycles;
 

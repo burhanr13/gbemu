@@ -1,5 +1,5 @@
 CC := gcc
-CFLAGS := -g -std=gnu17
+CFLAGS := -g -std=gnu17 -Wall -Werror
 CPPFLAGS := $(shell sdl2-config --cflags) -MP -MMD
 LDFLAGS := $(shell sdl2-config --libs)
 

@@ -21,12 +21,14 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    printf("Loaded cartridge info: mapper %d rom banks %d ram banks %d\n",
+    printf("Loaded cartridge info-- mapper: %d, rom banks: %d, ram banks: %d\n",
            cart->mapper, cart->rom_banks, cart->ram_banks);
 
     struct gb* gb = calloc(1, sizeof(*gb));
     gb->cart = cart;
     init_cpu(gb, &gb->cpu);
+
+    long cycle = 0;
 
     int running = 1;
     while (running) {
@@ -34,8 +36,12 @@ int main(int argc, char** argv) {
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT) running = 0;
         }
+    
+        clock_timers(gb, cycle);
         cpu_clock(&gb->cpu);
+        cycle++;
     }
+    printf("\n%ld cycles ran\n", cycle);
 
     free(gb);
     cart_destroy(cart);

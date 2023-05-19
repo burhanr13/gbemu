@@ -466,7 +466,7 @@ void run_instruction(struct sm83* cpu) {
                             case 1: // RETI
                                 cpu->cycles += 16;
                                 cpu->PC = pop(cpu);
-                                cpu->master->IME = 1;
+                                cpu->IME = 1;
                                 break;
                             case 2: // JP HL
                                 cpu->cycles += 4;
@@ -596,7 +596,7 @@ void run_instruction(struct sm83* cpu) {
                             break;
                         case 6: // DI
                             cpu->cycles += 4;
-                            cpu->master->IME = 0;
+                            cpu->IME = 0;
                             break;
                         case 7: // EI
                             cpu->cycles += 4;
@@ -645,20 +645,22 @@ void run_instruction(struct sm83* cpu) {
 
 void cpu_clock(struct sm83* cpu) {
     if (cpu->stop || cpu->ill) return;
-    if (cpu->master->IME && (cpu->master->IE & cpu->master->IF)) {
-        cpu->cycles += 20;
-        cpu->master->IME = 0;
-        int i;
-        for (i = 0; i < 5; i++) {
-            if (cpu->master->IF & (1 << i)) break;
-        }
-        cpu->master->IF &= ~(1 << i);
-        push(cpu, cpu->PC);
-        cpu->PC = 0b01000000 | (i << 3);
+    if (cpu->cycles == 0 && (cpu->master->IE & cpu->master->io[IF])) {
         cpu->halt = 0;
+        if (cpu->IME) {
+            cpu->cycles += 20;
+            cpu->IME = 0;
+            int i;
+            for (i = 0; i < 5; i++) {
+                if (cpu->master->io[IF] & (1 << i)) break;
+            }
+            cpu->master->io[IF] &= ~(1 << i);
+            push(cpu, cpu->PC);
+            cpu->PC = 0b01000000 | (i << 3);
+        }
     }
     if (cpu->ei) {
-        cpu->master->IME = 1;
+        cpu->IME = 1;
         cpu->ei = 0;
     }
     if (cpu->cycles == 0 && !cpu->halt) {
