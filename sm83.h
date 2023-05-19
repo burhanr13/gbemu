@@ -43,10 +43,15 @@ struct sm83 {
 
     int cycles;
 
-    int stopped;
-    int halted;
+    int ei;
+
+    int stop;
+    int ill;
+    int halt;
 };
 
-void clock(struct sm83* cpu);
+void init_cpu(struct sm83* cpu);
+
+void cpu_clock(struct sm83* cpu);
 
 #endif
