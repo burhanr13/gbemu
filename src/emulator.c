@@ -23,7 +23,7 @@ int main(int argc, char** argv){
 
     struct gb* gb = calloc(1, sizeof(*gb));
     gb->cart = cart;
-    init_cpu(&gb->cpu);
+    init_cpu(gb, &gb->cpu);
 
     int running = 1;
     while(running){
@@ -34,6 +34,9 @@ int main(int argc, char** argv){
 
         cpu_clock(&gb->cpu);
     }
+
+    free(gb);
+    cart_destroy(cart);
 
     SDL_Quit();
     return 0;

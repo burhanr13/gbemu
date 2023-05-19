@@ -50,7 +50,7 @@ struct sm83 {
     int halt;
 };
 
-void init_cpu(struct sm83* cpu);
+void init_cpu(struct gb* master, struct sm83* cpu);
 
 void cpu_clock(struct sm83* cpu);
 

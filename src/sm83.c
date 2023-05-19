@@ -5,8 +5,9 @@
 
 #include "gb.h"
 
-void init_cpu(struct sm83* cpu) {
+void init_cpu(struct gb* master, struct sm83* cpu) {
     memset(cpu, 0, sizeof(*cpu));
+    cpu->master = master;
     cpu->A = 0x01;
     cpu->PC = 0x0100;
 }
