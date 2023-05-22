@@ -108,10 +108,10 @@ u8 cart_read(struct cartridge* cart, u16 addr, enum cart_region region) {
                     }
                 case CART_ROM1:
                     return cart->rom
-                        [(cart->mbc1.cur_bank_5 ? cart->mbc1.cur_bank_5 : 1) |
-                         ((cart->rom_banks > 32) ? (cart->mbc1.cur_bank_2 << 5)
-                                                 : 0) &
-                             (cart->rom_banks - 1)][addr];
+                        [((cart->mbc1.cur_bank_5 ? cart->mbc1.cur_bank_5 : 1) |
+                          ((cart->rom_banks > 32) ? (cart->mbc1.cur_bank_2 << 5)
+                                                  : 0)) &
+                         (cart->rom_banks - 1)][addr];
                 case CART_RAM:
                     if (cart->ram_banks && cart->mbc1.ram_enable) {
                         if (cart->mbc1.mode == 0 || cart->rom_banks > 32) {

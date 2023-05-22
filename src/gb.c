@@ -33,28 +33,17 @@ u8 read8(struct gb* bus, u16 addr) {
     if (addr < 0xff00) {
         return 0xff;
     }
-    if (addr < 0xff80) {
-        if (addr == 0xff44) return 0x90;
-        switch (addr & 0x00ff) {
-            case DIV:
-                return bus->io[DIV];
-            case TIMA:
-                return bus->io[TIMA];
-            case TMA:
-                return bus->io[TMA];
-            case TAC:
-                return bus->io[TAC];
-            case IF:
-                return bus->io[IF];
-            default:
-                return 0xff;
-        }
+    if (addr < 0xff4d) {
+        return bus->io[addr & 0x00ff];
+    }
+    if(addr < 0xff80) { // cgb registers
+        return 0xff;
     }
     if (addr < 0xffff) {
         return bus->hram[addr - 0xff80];
     }
     if (addr == 0xffff) return bus->IE;
-    return 0;
+    return 0xff;
 }
 
 void write8(struct gb* bus, u16 addr, u8 data) {
@@ -112,6 +101,31 @@ void write8(struct gb* bus, u16 addr, u8 data) {
                 break;
             case IF:
                 bus->io[IF] = data & 0b00011111;
+                break;
+            case LCDC:
+                bus->io[LCDC] = data;
+                break;
+            case STAT:
+                bus->io[STAT] =
+                    (bus->io[STAT] & 0b000111) | (data & 0b01111000);
+                break;
+            case SCY:
+                bus->io[SCY] = data;
+                break;
+            case SCX:
+                bus->io[SCX] = data;
+                break;
+            case LYC:
+                bus->io[LYC] = data;
+                break;
+            case BGP:
+                bus->io[BGP] = data;
+                break;
+            case WY:
+                bus->io[WY] = data;
+                break;
+            case WX:
+                bus->io[WX] = data;
                 break;
         }
         return;

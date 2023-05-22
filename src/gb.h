@@ -2,6 +2,7 @@
 #define GB_H
 
 #include "cartridge.h"
+#include "ppu.h"
 #include "sm83.h"
 #include "types.h"
 
@@ -31,11 +32,21 @@ enum {
     IF = 0x0f,   // interrupt flag
     // 0x10 - 0x3f : sound
     // 0x40 - 0x4b : video
+    LCDC = 0x40, // lcd control
+    STAT = 0x41, // lcd status
+    SCY = 0x42, // scroll y
+    SCX = 0x43, // scroll x
+    LY = 0x44, // lcd y
+    LYC = 0x45, // lcd y compare
+    BGP = 0x47, // bg palette
+    WY = 0x4a, // window y
+    WX = 0x4b, // window x + 7
     // 0x4d - 0x77 : cgb
 };
 
 struct gb {
     struct sm83 cpu;
+    struct gb_ppu ppu;
 
     struct cartridge* cart;
 

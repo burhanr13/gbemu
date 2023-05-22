@@ -27,14 +27,26 @@ int main(int argc, char** argv) {
     struct gb* gb = calloc(1, sizeof(*gb));
     gb->cart = cart;
     init_cpu(gb, &gb->cpu);
+    init_ppu(gb, &gb->ppu);
 
     long cycle = 0;
 
     int running = 1;
     while (running) {
+        if (gb->cpu.stop) {
+            printf("STOP instruction -- terminating\n");
+            break;
+        }
+        if (gb->cpu.ill) {
+            printf("illegal instruction reached -- terminating\n");
+            break;
+        }
+
         SDL_Event e;
-        while (SDL_PollEvent(&e)) {
-            if (e.type == SDL_QUIT) running = 0;
+        if (cycle % 70000 == 0) {
+            while (SDL_PollEvent(&e)) {
+                if (e.type == SDL_QUIT) running = 0;
+            }
         }
 
         clock_timers(gb, cycle);

@@ -17,7 +17,7 @@ void init_cpu(struct gb* master, struct sm83* cpu) {
     cpu->PC = 0x0100;
 }
 
-void set_flag(struct sm83* cpu, int flag, int val) {
+static inline void set_flag(struct sm83* cpu, int flag, int val) {
     if (val) {
         cpu->F |= flag;
     } else {
@@ -25,7 +25,8 @@ void set_flag(struct sm83* cpu, int flag, int val) {
     }
 }
 
-void resolve_flags(struct sm83* cpu, int flags, u8 pre, u8 post, int carry) {
+static void resolve_flags(struct sm83* cpu, int flags, u8 pre, u8 post,
+                          int carry) {
     set_flag(cpu, FN, flags & FN);
     if (flags & FZ) {
         set_flag(cpu, FZ, post == 0);
@@ -46,7 +47,7 @@ void resolve_flags(struct sm83* cpu, int flags, u8 pre, u8 post, int carry) {
     }
 }
 
-int eval_cond(struct sm83* cpu, u8 opcode) {
+static inline int eval_cond(struct sm83* cpu, u8 opcode) {
     switch ((opcode & 0b00011000) >> 3) {
         case 0: // NZ
             return !(cpu->F & FZ);
@@ -60,7 +61,7 @@ int eval_cond(struct sm83* cpu, u8 opcode) {
     return 0;
 }
 
-u16* getr16mod(struct sm83* cpu, u8 opcode) {
+static inline u16* getr16mod(struct sm83* cpu, u8 opcode) {
     switch ((opcode & 0b00110000) >> 4) {
         case 0:
             return &cpu->BC;
@@ -74,7 +75,7 @@ u16* getr16mod(struct sm83* cpu, u8 opcode) {
     return NULL;
 }
 
-u16* getr16stack(struct sm83* cpu, u8 opcode) {
+static inline u16* getr16stack(struct sm83* cpu, u8 opcode) {
     switch ((opcode & 0b00110000) >> 4) {
         case 0:
             return &cpu->BC;
@@ -88,7 +89,7 @@ u16* getr16stack(struct sm83* cpu, u8 opcode) {
     return NULL;
 }
 
-u16 getr16addr(struct sm83* cpu, u8 opcode) {
+static inline u16 getr16addr(struct sm83* cpu, u8 opcode) {
     switch ((opcode & 0b00110000) >> 4) {
         case 0:
             return cpu->BC;
@@ -102,7 +103,7 @@ u16 getr16addr(struct sm83* cpu, u8 opcode) {
     return 0;
 }
 
-u8 getr8src(struct sm83* cpu, u8 opcode) {
+static inline u8 getr8src(struct sm83* cpu, u8 opcode) {
     switch (opcode & 0b00000111) {
         case 0:
             return cpu->B;
@@ -124,7 +125,7 @@ u8 getr8src(struct sm83* cpu, u8 opcode) {
     return 0;
 }
 
-u8* getr8dest(struct sm83* cpu, u8 opcode) {
+static inline u8* getr8dest(struct sm83* cpu, u8 opcode) {
     switch ((opcode & 0b00111000) >> 3) {
         case 0:
             return &cpu->B;
@@ -146,7 +147,7 @@ u8* getr8dest(struct sm83* cpu, u8 opcode) {
     return NULL;
 }
 
-void run_alu(struct sm83* cpu, u8 opcode, u8 op2) {
+static void run_alu(struct sm83* cpu, u8 opcode, u8 op2) {
     u8 pre = cpu->A;
     switch ((opcode & 0b00111000) >> 3) {
         case 0: // ADD
@@ -187,12 +188,12 @@ void run_alu(struct sm83* cpu, u8 opcode, u8 op2) {
     }
 }
 
-void push(struct sm83* cpu, u16 val) {
+static inline void push(struct sm83* cpu, u16 val) {
     cpu->SP -= 2;
     write16(cpu->master, cpu->SP, val);
 }
 
-u16 pop(struct sm83* cpu) {
+static inline u16 pop(struct sm83* cpu) {
     u16 val = read16(cpu->master, cpu->SP);
     cpu->SP += 2;
     return val;
