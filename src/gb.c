@@ -13,7 +13,12 @@ u8 read8(struct gb* bus, u16 addr) {
         return cart_read(bus->cart, addr & 0x3fff, CART_ROM1);
     }
     if (addr < 0xa000) {
-        return bus->vram[0][addr & 0x1fff];
+        if (!(bus->io[LCDC] & LCDC_ENABLE) ||
+            (bus->io[STAT] & STAT_MODE) != 3) {
+            return bus->vram[0][addr & 0x1fff];
+        } else {
+            return 0xff;
+        }
     }
     if (addr < 0xc000) {
         return cart_read(bus->cart, addr & 0x1fff, CART_RAM);
@@ -28,7 +33,11 @@ u8 read8(struct gb* bus, u16 addr) {
         return bus->wram[0][addr & 0x0fff];
     }
     if (addr < 0xfea0) {
-        return bus->oam[addr - 0xfe00];
+        if (!(bus->io[LCDC] & LCDC_ENABLE) || (bus->io[STAT] & STAT_MODE) < 2) {
+            return bus->oam[addr - 0xfe00];
+        } else {
+            return 0xff;
+        }
     }
     if (addr < 0xff00) {
         return 0xff;
@@ -36,7 +45,7 @@ u8 read8(struct gb* bus, u16 addr) {
     if (addr < 0xff4d) {
         return bus->io[addr & 0x00ff];
     }
-    if(addr < 0xff80) { // cgb registers
+    if (addr < 0xff80) { // cgb registers
         return 0xff;
     }
     if (addr < 0xffff) {
@@ -50,12 +59,15 @@ void write8(struct gb* bus, u16 addr, u8 data) {
     if (addr < 0x4000) {
         cart_write(bus->cart, addr, CART_ROM0, data);
         return;
-    }else if (addr < 0x8000) {
+    } else if (addr < 0x8000) {
         cart_write(bus->cart, addr & 0x3fff, CART_ROM1, data);
         return;
     }
     if (addr < 0xa000) {
-        bus->vram[0][addr & 0x1fff] = data;
+        if (!(bus->io[LCDC] & LCDC_ENABLE) ||
+            (bus->io[STAT] & STAT_MODE) != 3) {
+            bus->vram[0][addr & 0x1fff] = data;
+        }
         return;
     }
     if (addr < 0xc000) {
@@ -75,14 +87,16 @@ void write8(struct gb* bus, u16 addr, u8 data) {
         return;
     }
     if (addr < 0xfea0) {
-        bus->oam[addr - 0xfe00] = data;
+        if (!(bus->io[LCDC] & LCDC_ENABLE) || (bus->io[STAT] & STAT_MODE) < 2) {
+            bus->oam[addr - 0xfe00] = data;
+        }
         return;
     }
     if (addr < 0xff00) {
         return;
     }
     if (addr < 0xff80) {
-        switch(addr & 0x00ff){
+        switch (addr & 0x00ff) {
             case SB:
                 printf("%c", data);
                 fflush(stdout);
@@ -147,14 +161,14 @@ void write16(struct gb* bus, u16 addr, u16 data) {
 }
 
 void clock_timers(struct gb* gb, long cycle) {
-    if((cycle & 255) == 0) {
+    if ((cycle & 255) == 0) {
         gb->io[DIV]++;
     }
-    if(gb->io[TAC] & 0b100){
+    if (gb->io[TAC] & 0b100) {
         static int freq[] = {1023, 15, 63, 255};
-        if((cycle & freq[gb->io[TAC] & 0b011]) == 0){
+        if ((cycle & freq[gb->io[TAC] & 0b011]) == 0) {
             gb->io[TIMA]++;
-            if(gb->io[TIMA] == 0){
+            if (gb->io[TIMA] == 0) {
                 gb->io[TIMA] = gb->io[TMA];
                 gb->io[IF] |= I_TIMER;
             }

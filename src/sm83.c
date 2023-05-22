@@ -15,6 +15,7 @@ void init_cpu(struct gb* master, struct sm83* cpu) {
     cpu->HL = 0x014d;
     cpu->SP = 0xfffe;
     cpu->PC = 0x0100;
+    cpu->master->io[LCDC] |= LCDC_ENABLE;
 }
 
 static inline void set_flag(struct sm83* cpu, int flag, int val) {
@@ -216,6 +217,7 @@ void run_instruction(struct sm83* cpu) {
                             write16(cpu->master, addr, cpu->SP);
                             break;
                         case 2: // STOP
+                            cpu->cycles += 4;
                             cpu->stop = 1;
                             break;
                         case 3: // JR d
@@ -645,9 +647,10 @@ void run_instruction(struct sm83* cpu) {
 }
 
 void cpu_clock(struct sm83* cpu) {
-    if (cpu->stop || cpu->ill) return;
+    if (cpu->ill) return;
     if (cpu->cycles == 0 && (cpu->master->IE & cpu->master->io[IF])) {
         cpu->halt = 0;
+        if (cpu->master->io[IF] & I_JOYPAD) cpu->stop = 0;
         if (cpu->IME) {
             cpu->cycles += 20;
             cpu->IME = 0;
@@ -664,7 +667,7 @@ void cpu_clock(struct sm83* cpu) {
         cpu->IME = 1;
         cpu->ei = 0;
     }
-    if (cpu->cycles == 0 && !cpu->halt) {
+    if (cpu->cycles == 0 && !cpu->halt && !cpu->stop) {
         run_instruction(cpu);
     }
     if (cpu->cycles) cpu->cycles--;

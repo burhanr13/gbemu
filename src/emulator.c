@@ -5,11 +5,10 @@
 
 #include "cartridge.h"
 #include "gb.h"
+#include "ppu.h"
 #include "sm83.h"
 
 int main(int argc, char** argv) {
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
-
     if (argc < 2) {
         printf("pass rom file name as argument\n");
         return -1;
@@ -21,6 +20,15 @@ int main(int argc, char** argv) {
         return -1;
     }
 
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
+    SDL_Window* window;
+    SDL_Renderer* renderer;
+    SDL_CreateWindowAndRenderer(4 * GB_SCREEN_W, 4 * GB_SCREEN_H, 0, &window,
+                                &renderer);
+    SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888,
+                                             SDL_TEXTUREACCESS_STREAMING,
+                                             GB_SCREEN_W, GB_SCREEN_H);
+
     printf("Loaded cartridge info-- mapper: %d, rom banks: %d, ram banks: %d\n",
            cart->mapper, cart->rom_banks, cart->ram_banks);
 
@@ -30,34 +38,46 @@ int main(int argc, char** argv) {
     init_ppu(gb, &gb->ppu);
 
     long cycle = 0;
+    long frame = 0;
+
+    Uint64 start_time = SDL_GetTicks64();
 
     int running = 1;
     while (running) {
-        if (gb->cpu.stop) {
-            printf("STOP instruction -- terminating\n");
-            break;
-        }
         if (gb->cpu.ill) {
             printf("illegal instruction reached -- terminating\n");
             break;
         }
 
         SDL_Event e;
-        if (cycle % 70000 == 0) {
-            while (SDL_PollEvent(&e)) {
-                if (e.type == SDL_QUIT) running = 0;
-            }
+        while (SDL_PollEvent(&e)) {
+            if (e.type == SDL_QUIT) running = 0;
         }
 
-        clock_timers(gb, cycle);
-        cpu_clock(&gb->cpu);
-        cycle++;
+        SDL_LockTexture(texture, NULL, (void**) &gb->ppu.screen,
+                        &gb->ppu.pitch);
+        while (!gb->ppu.frame_complete) {
+            clock_timers(gb, cycle);
+            ppu_clock(&gb->ppu);
+            cpu_clock(&gb->cpu);
+            cycle++;
+        }
+        gb->ppu.frame_complete = 0;
+        SDL_UnlockTexture(texture);
+        SDL_RenderCopy(renderer, texture, NULL, NULL);
+        SDL_RenderPresent(renderer);
+        frame++;
+
+        long wait_time = (1000 * frame) / 60 + start_time - SDL_GetTicks64();
+        if(wait_time > 0) SDL_Delay(wait_time);
     }
-    printf("\n%ld cycles ran\n", cycle);
+    printf("\n%ld cycles, %ld frames\n", cycle, frame);
 
     free(gb);
     cart_destroy(cart);
 
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
     SDL_Quit();
     return 0;
 }

@@ -11,6 +11,8 @@
 #define SCANLINES_PER_FRAME 154
 #define MODE2_LEN 80
 
+#define TILEMAP_SIZE 32
+
 enum {
     LCDC_BG_ENABLE = 1 << 0,
     LCDC_OBJ_ENABLE = 1 << 1,
@@ -36,7 +38,8 @@ struct gb;
 struct gb_ppu {
     struct gb* master;
 
-    SDL_Texture* screen;
+    Uint32* screen;
+    int pitch;
 
     u8 bg_tile_b0;
     u8 bg_tile_b1;
@@ -49,6 +52,7 @@ struct gb_ppu {
 
     int cycle;
     int scanline;
+    int frame_complete;
 };
 
 void init_ppu(struct gb* master, struct gb_ppu* ppu);
