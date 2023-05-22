@@ -24,8 +24,8 @@ static void load_bg_tile(struct gb_ppu* ppu) {
         s8 signed_index = tile_index;
         tile_addr = 0x1000 + ((s16) signed_index << 4);
     }
-    ppu->bg_tile_b0 = ppu->master->vram[0][tile_addr] + 2 * ppu->fineY;
-    ppu->bg_tile_b1 = ppu->master->vram[0][tile_addr] + 1 + 2 * ppu->fineY;
+    ppu->bg_tile_b0 = ppu->master->vram[0][tile_addr + 2 * ppu->fineY];
+    ppu->bg_tile_b1 = ppu->master->vram[0][tile_addr + 2 * ppu->fineY + 1];
 }
 
 void ppu_clock(struct gb_ppu* ppu) {
