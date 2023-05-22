@@ -4,7 +4,7 @@
 
 #include "gb.h"
 
-Uint32 colors[] = {0x00000000, 0x00008000, 0x0000d000, 0x00ffffff};
+Uint32 colors[] = {0x00ffffff, 0x0000d000, 0x00008000, 0x00000000};
 
 void init_ppu(struct gb* master, struct gb_ppu* ppu) {
     ppu->master = master;
@@ -67,8 +67,9 @@ void ppu_clock(struct gb_ppu* ppu) {
                 int bg_index = 0;
                 if (ppu->bg_tile_b0 & 0x80) bg_index |= 0b01;
                 if (ppu->bg_tile_b1 & 0x80) bg_index |= 0b10;
+                int bg_color = (ppu->master->io[BGP] >> (2 * bg_index)) & 0b11;
                 ppu->screen[ppu->scanline * (ppu->pitch / 4) + ppu->screenX] =
-                    colors[bg_index];
+                    colors[bg_color];
             }
 
             ppu->bg_tile_b0 <<= 1;

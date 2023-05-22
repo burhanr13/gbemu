@@ -8,6 +8,8 @@
 #include "ppu.h"
 #include "sm83.h"
 
+#define FPS 60
+
 int main(int argc, char** argv) {
     if (argc < 2) {
         printf("pass rom file name as argument\n");
@@ -68,7 +70,7 @@ int main(int argc, char** argv) {
         SDL_RenderPresent(renderer);
         frame++;
 
-        long wait_time = (1000 * frame) / 60 + start_time - SDL_GetTicks64();
+        long wait_time = (1000 * frame) / FPS + start_time - SDL_GetTicks64();
         if(wait_time > 0) SDL_Delay(wait_time);
     }
     printf("\n%ld cycles, %ld frames\n", cycle, frame);

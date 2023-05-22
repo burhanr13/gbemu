@@ -97,10 +97,6 @@ void write8(struct gb* bus, u16 addr, u8 data) {
     }
     if (addr < 0xff80) {
         switch (addr & 0x00ff) {
-            case SB:
-                printf("%c", data);
-                fflush(stdout);
-                break;
             case DIV:
                 bus->io[DIV] = 0x00;
                 break;
