@@ -16,6 +16,7 @@ DEPS := $(OBJS:.o=.d)
 all: $(BUILD_DIR)/$(TARGET_EXEC)
 
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
+	rm ./$(TARGET_EXEC)
 	$(CC) -o $@ $(CFLAGS) $(CPPFLAGS) $^ $(LDFLAGS)
 	cp $(BUILD_DIR)/$(TARGET_EXEC) ./$(TARGET_EXEC)
 

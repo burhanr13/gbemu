@@ -68,6 +68,8 @@ int main(int argc, char** argv) {
         }
         gb->ppu.frame_complete = 0;
         SDL_UnlockTexture(texture);
+
+        SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, texture, NULL, NULL);
         SDL_RenderPresent(renderer);
         frame++;

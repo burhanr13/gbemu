@@ -49,6 +49,8 @@ struct gb_ppu {
     int fineX;
     int fineY;
     int screenX;
+    int rendering_window;
+    int windowline;
 
     int cycle;
     int scanline;

@@ -14,8 +14,14 @@ void init_ppu(struct gb* master, struct gb_ppu* ppu) {
 
 static void load_bg_tile(struct gb_ppu* ppu) {
     u16 tilemap_offset = TILEMAP_SIZE * ppu->tileY + ppu->tileX;
-    u16 tilemap_start =
-        (ppu->master->io[LCDC] & LCDC_BG_MAP_AREA) ? 0x1c00 : 0x1800;
+    u16 tilemap_start;
+    if (ppu->rendering_window && ppu->screenX >= (ppu->master->io[WX] - 7)) {
+        tilemap_start =
+            (ppu->master->io[LCDC] & LCDC_WINDOW_TILE_AREA) ? 0x1c00 : 0x1800;
+    } else {
+        tilemap_start =
+            (ppu->master->io[LCDC] & LCDC_BG_MAP_AREA) ? 0x1c00 : 0x1800;
+    }
     u8 tile_index = ppu->master->vram[0][tilemap_start + tilemap_offset];
     u16 tile_addr;
     if (ppu->master->io[LCDC] & LCDC_BG_TILE_AREA) {
@@ -43,6 +49,13 @@ void ppu_clock(struct gb_ppu* ppu) {
             ppu->master->io[STAT] |= 2;
             if (ppu->master->io[STAT] & STAT_I_OAM)
                 ppu->master->io[IF] |= I_STAT;
+
+            if (ppu->scanline == 0) ppu->rendering_window = 0;
+            if (ppu->scanline == ppu->master->io[WY] &&
+                (ppu->master->io[LCDC] & LCDC_WINDOW_ENABLE)) {
+                ppu->rendering_window = 1;
+                ppu->windowline = 0;
+            }
             // search OAM for sprites
         } else if (ppu->cycle < MODE2_LEN) {
             // do nothing
@@ -51,11 +64,18 @@ void ppu_clock(struct gb_ppu* ppu) {
                 ppu->master->io[STAT] &= ~STAT_MODE;
                 ppu->master->io[STAT] |= 3;
 
-                u8 curY = ppu->master->io[SCY] + ppu->scanline;
-                ppu->tileY = curY >> 3;
-                ppu->fineY = curY & 0b111;
-                ppu->tileX = ppu->master->io[SCX] >> 3;
-                ppu->fineX = ppu->master->io[SCX] & 0b111;
+                if (ppu->rendering_window && ppu->master->io[WX] < 7) {
+                    ppu->tileX = 0;
+                    ppu->fineX = 6 - ppu->master->io[WX];
+                    ppu->tileY = (ppu->windowline >> 3) & (TILEMAP_SIZE - 1);
+                    ppu->fineY = ppu->windowline & 0b111;
+                } else {
+                    u8 curY = ppu->master->io[SCY] + ppu->scanline;
+                    ppu->tileY = (curY >> 3) & (TILEMAP_SIZE - 1);
+                    ppu->fineY = curY & 0b111;
+                    ppu->tileX = ppu->master->io[SCX] >> 3;
+                    ppu->fineX = ppu->master->io[SCX] & 0b111;
+                }
                 load_bg_tile(ppu);
                 ppu->bg_tile_b0 <<= ppu->fineX;
                 ppu->bg_tile_b1 <<= ppu->fineX;
@@ -64,6 +84,15 @@ void ppu_clock(struct gb_ppu* ppu) {
             }
 
             if (ppu->master->io[LCDC] & LCDC_BG_ENABLE) {
+                if (ppu->screenX == ppu->master->io[WX] - 7 &&
+                    ppu->rendering_window) {
+                    ppu->tileX = 0;
+                    ppu->fineX = 0;
+                    ppu->tileY = (ppu->windowline >> 3) & (TILEMAP_SIZE - 1);
+                    ppu->fineY = ppu->windowline & 0b111;
+                    load_bg_tile(ppu);
+                }
+
                 int bg_index = 0;
                 if (ppu->bg_tile_b0 & 0x80) bg_index |= 0b01;
                 if (ppu->bg_tile_b1 & 0x80) bg_index |= 0b10;
@@ -97,6 +126,7 @@ void ppu_clock(struct gb_ppu* ppu) {
     if (ppu->cycle == CYCLES_PER_SCANLINE) {
         ppu->cycle = 0;
         ppu->scanline++;
+        ppu->windowline++;
         if (ppu->scanline == SCANLINES_PER_FRAME) {
             ppu->scanline = 0;
             ppu->frame_complete = 1;

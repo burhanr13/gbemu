@@ -4,11 +4,13 @@ An emulator for the Game Boy, a handheld game console from the 1990s which uses 
 
 Completed:
 - CPU
+- MBC1
 - Background rendering
+- window rendering
 
 Todo:
-- window rendering
-- sprites
+- sprite rendering
 - sound
-- mappers
+- other mappers
 - timing
+- game boy color support
