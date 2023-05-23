@@ -54,12 +54,14 @@ int main(int argc, char** argv) {
         SDL_Event e;
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT) running = 0;
+            gb_handle_event(gb, &e);
         }
 
         SDL_LockTexture(texture, NULL, (void**) &gb->ppu.screen,
                         &gb->ppu.pitch);
         while (!gb->ppu.frame_complete) {
             clock_timers(gb, cycle);
+            update_joyp(gb);
             ppu_clock(&gb->ppu);
             cpu_clock(&gb->cpu);
             cycle++;

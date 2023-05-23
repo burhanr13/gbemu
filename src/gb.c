@@ -1,5 +1,7 @@
 #include "gb.h"
 
+#include <SDL2/SDL.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -97,6 +99,10 @@ void write8(struct gb* bus, u16 addr, u8 data) {
     }
     if (addr < 0xff80) {
         switch (addr & 0x00ff) {
+            case JOYP:
+                bus->io[JOYP] =
+                    (bus->io[JOYP] & 0b11001111) | (data & 0b00110000);
+                break;
             case DIV:
                 bus->io[DIV] = 0x00;
                 break;
@@ -168,6 +174,84 @@ void clock_timers(struct gb* gb, long cycle) {
                 gb->io[TIMA] = gb->io[TMA];
                 gb->io[IF] |= I_TIMER;
             }
+        }
+    }
+}
+
+void update_joyp(struct gb* gb) {
+    u8 buttons = 0b11110000;
+    if (!(gb->io[JOYP] & JP_DIR)) {
+        buttons |= gb->jp_dir;
+    }
+    if (!(gb->io[JOYP] & JP_ACT)) {
+        buttons |= gb->jp_action;
+    }
+    buttons = ~buttons;
+    if (buttons < (gb->io[JOYP] & 0b1111)) {
+        gb->io[IF] |= I_JOYPAD;
+    }
+    gb->io[JOYP] = (gb->io[JOYP] & 0b11110000) | buttons;
+}
+
+void gb_handle_event(struct gb* gb, SDL_Event* e) {
+    if (e->type == SDL_KEYDOWN) {
+        switch (e->key.keysym.scancode) {
+            case SDL_SCANCODE_UP:
+                gb->jp_dir |= JP_U_SL;
+                break;
+            case SDL_SCANCODE_DOWN:
+                gb->jp_dir |= JP_D_ST;
+                break;
+            case SDL_SCANCODE_LEFT:
+                gb->jp_dir |= JP_L_B;
+                break;
+            case SDL_SCANCODE_RIGHT:
+                gb->jp_dir |= JP_R_A;
+                break;
+            case SDL_SCANCODE_Z:
+                gb->jp_action |= JP_R_A;
+                break;
+            case SDL_SCANCODE_X:
+                gb->jp_action |= JP_L_B;
+                break;
+            case SDL_SCANCODE_BACKSPACE:
+                gb->jp_action |= JP_U_SL;
+                break;
+            case SDL_SCANCODE_RETURN:
+                gb->jp_action |= JP_D_ST;
+                break;
+            default:
+                break;
+        }
+    }
+    if (e->type == SDL_KEYUP) {
+        switch (e->key.keysym.scancode) {
+            case SDL_SCANCODE_UP:
+                gb->jp_dir &= ~JP_U_SL;
+                break;
+            case SDL_SCANCODE_DOWN:
+                gb->jp_dir &= ~JP_D_ST;
+                break;
+            case SDL_SCANCODE_LEFT:
+                gb->jp_dir &= ~JP_L_B;
+                break;
+            case SDL_SCANCODE_RIGHT:
+                gb->jp_dir &= ~JP_R_A;
+                break;
+            case SDL_SCANCODE_Z:
+                gb->jp_action &= ~JP_R_A;
+                break;
+            case SDL_SCANCODE_X:
+                gb->jp_action &= ~JP_L_B;
+                break;
+            case SDL_SCANCODE_BACKSPACE:
+                gb->jp_action &= ~JP_U_SL;
+                break;
+            case SDL_SCANCODE_RETURN:
+                gb->jp_action &= ~JP_D_ST;
+                break;
+            default:
+                break;
         }
     }
 }
