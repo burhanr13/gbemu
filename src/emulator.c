@@ -31,9 +31,6 @@ int main(int argc, char** argv) {
                                              SDL_TEXTUREACCESS_STREAMING,
                                              GB_SCREEN_W, GB_SCREEN_H);
 
-    printf("Loaded cartridge info-- mapper: %d, rom banks: %d, ram banks: %d\n",
-           cart->mapper, cart->rom_banks, cart->ram_banks);
-
     struct gb* gb = calloc(1, sizeof(*gb));
     gb->cart = cart;
     init_cpu(gb, &gb->cpu);
@@ -78,7 +75,6 @@ int main(int argc, char** argv) {
         long wait_time = (1000 * frame) / FPS + start_time - SDL_GetTicks64();
         if(wait_time > 0) SDL_Delay(wait_time);
     }
-    printf("\n%ld cycles, %ld frames\n", cycle, frame);
 
     free(gb);
     cart_destroy(cart);

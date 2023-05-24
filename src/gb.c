@@ -210,8 +210,8 @@ void update_joyp(struct gb* gb) {
 }
 
 void run_dma(struct gb* gb) {
-    if(gb->dma_cycles == 0) {
-        if(gb->dma_index == OAM_SIZE){
+    if (gb->dma_cycles == 0) {
+        if (gb->dma_index == OAM_SIZE) {
             gb->dma_active = false;
             return;
         }

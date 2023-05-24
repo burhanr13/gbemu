@@ -33,28 +33,28 @@ static void load_bg_tile(struct gb_ppu* ppu) {
     ppu->bg_tile_b1 = ppu->master->vram[0][tile_addr + 2 * ppu->fineY + 1];
 }
 
-// static void load_obj_tile(struct gb_ppu* ppu) {
-//     for (int i = 0; i < ppu->obj_ct; i++) {
-//         if (ppu->screenX != ppu->master->oam[ppu->objs[i] + 1] - 8) continue;
-//         int rel_y = ppu->scanline - ppu->master->oam[ppu->objs[i]] + 16;
-//         u8 tile_index = ppu->master->oam[ppu->objs[i] + 2];
-//         u8 obj_attr = ppu->master->oam[ppu->objs[i] + 3];
-//         if (ppu->master->io[LCDC] & LCDC_OBJ_SIZE) {
-//             if (obj_attr & OBJ_YFLIP) rel_y = 16 - rel_y;
-//             tile_index &= ~1;
-//         } else {
-//             if (obj_attr & OBJ_YFLIP) rel_y = 8 - rel_y;
-//         }
-//         rel_y &= 0xf;
-//         u8 obj_b0 = ppu->master->vram[0][(tile_index << 4) + 2 * rel_y];
-//         u8 obj_b1 = ppu->master->vram[0][(tile_index << 4) + 2 * rel_y + 1];
-//         u8 mask = ~(ppu->obj_tile_b0 | ppu->obj_tile_b1);
-//         ppu->obj_tile_b0 |= obj_b0 & mask;
-//         ppu->obj_tile_b1 |= obj_b1 & mask;
-//         if (obj_attr & OBJ_PAL) ppu->obj_tile_pal &= mask;
-//         if (obj_attr & OBJ_BGOVER) ppu->obj_tile_bgover &= mask;
-//     }
-// }
+static void load_obj_tile(struct gb_ppu* ppu) {
+    for (int i = 0; i < ppu->obj_ct; i++) {
+        if (ppu->screenX != ppu->master->oam[ppu->objs[i] + 1] - 8) continue;
+        int rel_y = ppu->scanline - ppu->master->oam[ppu->objs[i]] + 16;
+        u8 tile_index = ppu->master->oam[ppu->objs[i] + 2];
+        u8 obj_attr = ppu->master->oam[ppu->objs[i] + 3];
+        if (ppu->master->io[LCDC] & LCDC_OBJ_SIZE) {
+            if (obj_attr & OBJ_YFLIP) rel_y = 16 - rel_y;
+            tile_index &= ~1;
+        } else {
+            if (obj_attr & OBJ_YFLIP) rel_y = 8 - rel_y;
+        }
+        rel_y &= 0xf;
+        u8 obj_b0 = ppu->master->vram[0][(tile_index << 4) + 2 * rel_y];
+        u8 obj_b1 = ppu->master->vram[0][(tile_index << 4) + 2 * rel_y + 1];
+        u8 mask = ~(ppu->obj_tile_b0 | ppu->obj_tile_b1);
+        ppu->obj_tile_b0 |= obj_b0 & mask;
+        ppu->obj_tile_b1 |= obj_b1 & mask;
+        if (obj_attr & OBJ_PAL) ppu->obj_tile_pal &= mask;
+        if (obj_attr & OBJ_BGOVER) ppu->obj_tile_bgover &= mask;
+    }
+}
 
 void ppu_clock(struct gb_ppu* ppu) {
     if (ppu->master->io[LYC] == ppu->master->io[LY]) {
@@ -137,25 +137,25 @@ void ppu_clock(struct gb_ppu* ppu) {
                 if (ppu->bg_tile_b1 & 0x80) bg_index |= 0b10;
                 color = (ppu->master->io[BGP] >> (2 * bg_index)) & 0b11;
             }
-            // if (!ppu->master->dma_active &&
-            //     (ppu->master->io[LCDC] & LCDC_OBJ_ENABLE)) {
-            //     load_obj_tile(ppu);
+            if (!ppu->master->dma_active &&
+                (ppu->master->io[LCDC] & LCDC_OBJ_ENABLE)) {
+                load_obj_tile(ppu);
 
-            //     int obj_index = 0;
-            //     if (ppu->obj_tile_b0 & 0x80) obj_index |= 0b01;
-            //     if (ppu->obj_tile_b1 & 0x80) obj_index |= 0b10;
-            
-            //     if ((color == 0 || !(ppu->obj_tile_bgover & 0x80)) &&
-            //         obj_index) {
-            //         if (ppu->obj_tile_pal & 0x80) {
-            //             color =
-            //                 (ppu->master->io[OBP1] >> (2 * obj_index)) & 0b11;
-            //         } else {
-            //             color =
-            //                 (ppu->master->io[OBP0] >> (2 * obj_index)) & 0b11;
-            //         }
-            //     }
-            // }
+                int obj_index = 0;
+                if (ppu->obj_tile_b0 & 0x80) obj_index |= 0b01;
+                if (ppu->obj_tile_b1 & 0x80) obj_index |= 0b10;
+
+                if ((color == 0 || !(ppu->obj_tile_bgover & 0x80)) &&
+                    obj_index) {
+                    if (ppu->obj_tile_pal & 0x80) {
+                        color =
+                            (ppu->master->io[OBP1] >> (2 * obj_index)) & 0b11;
+                    } else {
+                        color =
+                            (ppu->master->io[OBP0] >> (2 * obj_index)) & 0b11;
+                    }
+                }
+            }
 
             ppu->screen[ppu->scanline * (ppu->pitch / 4) + ppu->screenX] =
                 colors[color];
