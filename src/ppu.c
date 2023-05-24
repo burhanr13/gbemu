@@ -91,11 +91,8 @@ void ppu_clock(struct gb_ppu* ppu) {
                     ppu->windowline = 0;
                 }
 
+                ppu->screenX = -7;
                 ppu->obj_ct = 0;
-                ppu->obj_tile_b0 = 0;
-                ppu->obj_tile_b1 = 0;
-                ppu->obj_tile_pal = 0;
-                ppu->obj_tile_bgover = 0;
             }
 
             if (!ppu->master->dma_active && !(ppu->cycle & 1) &&
@@ -109,25 +106,25 @@ void ppu_clock(struct gb_ppu* ppu) {
                 }
             }
         } else if (ppu->screenX < GB_SCREEN_W) {
-            if (ppu->screenX == 0) {
+            if (ppu->screenX == -7) {
                 ppu->master->io[STAT] &= ~STAT_MODE;
                 ppu->master->io[STAT] |= 3;
 
-                if (ppu->rendering_window && ppu->master->io[WX] < 7) {
-                    ppu->tileX = 0;
-                    ppu->fineX = 6 - ppu->master->io[WX];
-                    ppu->tileY = (ppu->windowline >> 3) & (TILEMAP_SIZE - 1);
-                    ppu->fineY = ppu->windowline & 0b111;
-                } else {
-                    u8 curY = ppu->master->io[SCY] + ppu->scanline;
-                    ppu->tileY = (curY >> 3) & (TILEMAP_SIZE - 1);
-                    ppu->fineY = curY & 0b111;
-                    ppu->tileX = ppu->master->io[SCX] >> 3;
-                    ppu->fineX = ppu->master->io[SCX] & 0b111;
-                }
+                u8 curY = ppu->master->io[SCY] + ppu->scanline;
+                ppu->tileY = (curY >> 3) & (TILEMAP_SIZE - 1);
+                ppu->fineY = curY & 0b111;
+                ppu->tileX =
+                    ((ppu->master->io[SCX] - 7) >> 3) & (TILEMAP_SIZE - 1);
+                ppu->fineX = (ppu->master->io[SCX] - 7) & 0b111;
+
                 load_bg_tile(ppu);
                 ppu->bg_tile_b0 <<= ppu->fineX;
                 ppu->bg_tile_b1 <<= ppu->fineX;
+
+                ppu->obj_tile_b0 = 0;
+                ppu->obj_tile_b1 = 0;
+                ppu->obj_tile_pal = 0;
+                ppu->obj_tile_bgover = 0;
             } else if (ppu->fineX == 0) {
                 load_bg_tile(ppu);
             }
@@ -168,8 +165,10 @@ void ppu_clock(struct gb_ppu* ppu) {
                 }
             }
 
-            ppu->screen[ppu->scanline * (ppu->pitch / 4) + ppu->screenX] =
-                colors[color];
+            if (ppu->screenX >= 0) {
+                ppu->screen[ppu->scanline * (ppu->pitch / 4) + ppu->screenX] =
+                    colors[color];
+            }
 
             ppu->bg_tile_b0 <<= 1;
             ppu->bg_tile_b1 <<= 1;
@@ -184,7 +183,7 @@ void ppu_clock(struct gb_ppu* ppu) {
             ppu->obj_tile_pal <<= 1;
             ppu->obj_tile_bgover <<= 1;
         } else if (ppu->screenX == GB_SCREEN_W) {
-            ppu->screenX = 0;
+            ppu->screenX++;
             ppu->master->io[STAT] &= ~STAT_MODE;
             ppu->master->io[STAT] |= 1;
             if (ppu->master->io[STAT] & STAT_I_HBLANK)
