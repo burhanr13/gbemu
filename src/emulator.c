@@ -62,11 +62,12 @@ int main(int argc, char** argv) {
         while (!gb->ppu.frame_complete) {
             clock_timers(gb, cycle);
             update_joyp(gb);
+            if (gb->dma_active) run_dma(gb);
             ppu_clock(&gb->ppu);
             cpu_clock(&gb->cpu);
             cycle++;
         }
-        gb->ppu.frame_complete = 0;
+        gb->ppu.frame_complete = false;
         SDL_UnlockTexture(texture);
 
         SDL_RenderClear(renderer);

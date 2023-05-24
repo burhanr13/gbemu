@@ -107,11 +107,11 @@ u8 cart_read(struct cartridge* cart, u16 addr, enum cart_region region) {
                         }
                     }
                 case CART_ROM1:
-                    return cart->rom
-                        [((cart->mbc1.cur_bank_5 ? cart->mbc1.cur_bank_5 : 1) |
-                          ((cart->rom_banks > 32) ? (cart->mbc1.cur_bank_2 << 5)
-                                                  : 0)) &
-                         (cart->rom_banks - 1)][addr];
+                    return cart->rom[(cart->mbc1.cur_bank_5 | 1 |
+                                      ((cart->rom_banks > 32)
+                                           ? (cart->mbc1.cur_bank_2 << 5)
+                                           : 0)) &
+                                     (cart->rom_banks - 1)][addr];
                 case CART_RAM:
                     if (cart->ram_banks && cart->mbc1.ram_enable) {
                         if (cart->mbc1.mode == 0 || cart->rom_banks > 32) {
@@ -120,6 +120,40 @@ u8 cart_read(struct cartridge* cart, u16 addr, enum cart_region region) {
                             return cart->ram[cart->mbc1.cur_bank_2 &
                                              (cart->ram_banks - 1)][addr];
                         }
+                    } else return 0xff;
+            }
+        case MBC3:
+            switch (region) {
+                case CART_ROM0:
+                    return cart->rom[0][addr];
+                case CART_ROM1:
+                    return cart
+                        ->rom[(cart->mbc3.cur_rom_bank ? cart->mbc3.cur_rom_bank
+                                                       : 1) &
+                              (cart->rom_banks - 1)][addr];
+                case CART_RAM:
+                    if (cart->mbc3.ram_enable) {
+                        if ((cart->mbc3.cur_ram_bank & 0b1000) == 0) {
+                            if (cart->ram_banks) {
+                                return cart->ram[cart->mbc3.cur_ram_bank &
+                                                 (cart->ram_banks - 1)][addr];
+                            } else return 0xff;
+                        } else {
+                            return 0xff; // rtc
+                        }
+                    } else return 0xff;
+            }
+        case MBC5:
+            switch (region) {
+                case CART_ROM0:
+                    return cart->rom[0][addr];
+                case CART_ROM1:
+                    return cart->rom[(cart->mbc5.cur_rom_bank) &
+                                     (cart->rom_banks - 1)][addr];
+                case CART_RAM:
+                    if (cart->ram_banks && cart->mbc5.ram_enable) {
+                        return cart->ram[cart->mbc5.cur_ram_bank &
+                                         (cart->ram_banks - 1)][addr];
                     } else return 0xff;
             }
         default:
@@ -161,6 +195,62 @@ void cart_write(struct cartridge* cart, u16 addr, enum cart_region region,
                             cart->ram[cart->mbc1.cur_bank_2 &
                                       (cart->ram_banks - 1)][addr] = data;
                         }
+                    }
+                    break;
+            }
+            break;
+        case MBC3:
+            switch (region) {
+                case CART_ROM0:
+                    if (addr < 0x2000) {
+                        if (data == 0x0a || data == 0x00)
+                            cart->mbc3.ram_enable = data;
+                    } else {
+                        cart->mbc3.cur_rom_bank = data & 0b01111111;
+                    }
+                    break;
+                case CART_ROM1:
+                    if (addr < 0x2000) {
+                        cart->mbc3.cur_ram_bank = data & 0b1111;
+                    } else {
+                        // rtc
+                    }
+                    break;
+                case CART_RAM:
+                    if (cart->mbc3.ram_enable) {
+                        if ((cart->mbc3.cur_ram_bank & 0b1000) == 0) {
+                            if (cart->ram_banks) {
+                                cart->ram[cart->mbc3.cur_ram_bank &
+                                          (cart->ram_banks - 1)][addr] = data;
+                            }
+                        } else {
+                            // rtc
+                        }
+                    }
+                    break;
+            }
+            break;
+        case MBC5:
+            switch (region) {
+                case CART_ROM0:
+                    if (addr < 0x2000) {
+                        if ((data & 0x0f) == 0x0a || data == 0x00)
+                            cart->mbc5.ram_enable = data;
+                    } else {
+                        cart->mbc5.cur_rom_bank_l = data;
+                    }
+                    break;
+                case CART_ROM1:
+                    if (addr < 0x2000) {
+                        cart->mbc5.cur_rom_bank_h = data & 1;
+                    } else {
+                        cart->mbc5.cur_ram_bank = data;
+                    }
+                    break;
+                case CART_RAM:
+                    if (cart->ram_banks && cart->mbc5.ram_enable) {
+                        cart->ram[cart->mbc5.cur_ram_bank &
+                                  (cart->ram_banks - 1)][addr] = data;
                     }
                     break;
             }

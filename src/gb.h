@@ -47,7 +47,10 @@ enum {
     SCX = 0x43,  // scroll x
     LY = 0x44,   // lcd y
     LYC = 0x45,  // lcd y compare
+    DMA = 0x46, // oam dma start
     BGP = 0x47,  // bg palette
+    OBP0 = 0x48, // obj palette 0
+    OBP1 = 0x49, // obj palette 1
     WY = 0x4a,   // window y
     WX = 0x4b,   // window x + 7
     // 0x4d - 0x77 : cgb
@@ -72,6 +75,10 @@ struct gb {
 
     u8 jp_dir;
     u8 jp_action;
+
+    bool dma_active;
+    u8 dma_index;
+    int dma_cycles;
 };
 
 u8 read8(struct gb* bus, u16 addr);
@@ -79,8 +86,10 @@ u16 read16(struct gb* bus, u16 addr);
 void write8(struct gb* bus, u16 addr, u8 data);
 void write16(struct gb* bus, u16 addr, u16 data);
 
+void gb_handle_event(struct gb* gb, SDL_Event* e);
+
 void clock_timers(struct gb* gb, long cycle);
 void update_joyp(struct gb* gb);
-void gb_handle_event(struct gb* gb, SDL_Event* e);
+void run_dma(struct gb* gb);
 
 #endif

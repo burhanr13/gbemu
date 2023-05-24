@@ -40,15 +40,14 @@ struct sm83 {
     };
     u16 SP;
     u16 PC;
-    int IME;
+    bool IME;
 
     int cycles;
 
-    int ei;
-
-    int stop;
-    int ill;
-    int halt;
+    bool ei;
+    bool halt;
+    bool stop;
+    bool ill;
 };
 
 void init_cpu(struct gb* master, struct sm83* cpu);

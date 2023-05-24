@@ -8,6 +8,8 @@
 #include "cartridge.h"
 
 u8 read8(struct gb* bus, u16 addr) {
+    if (bus->dma_active && addr < 0xff80) return 0xff;
+
     if (addr < 0x4000) {
         return cart_read(bus->cart, addr, CART_ROM0);
     }
@@ -58,10 +60,13 @@ u8 read8(struct gb* bus, u16 addr) {
 }
 
 void write8(struct gb* bus, u16 addr, u8 data) {
+    if (bus->dma_active && addr < 0xff80) return;
+
     if (addr < 0x4000) {
         cart_write(bus->cart, addr, CART_ROM0, data);
         return;
-    } else if (addr < 0x8000) {
+    }
+    if (addr < 0x8000) {
         cart_write(bus->cart, addr & 0x3fff, CART_ROM1, data);
         return;
     }
@@ -134,8 +139,19 @@ void write8(struct gb* bus, u16 addr, u8 data) {
             case LYC:
                 bus->io[LYC] = data;
                 break;
+            case DMA:
+                bus->io[DMA] = data;
+                bus->dma_active = true;
+                bus->dma_index = 0;
+                break;
             case BGP:
                 bus->io[BGP] = data;
+                break;
+            case OBP0:
+                bus->io[OBP0] = data;
+                break;
+            case OBP1:
+                bus->io[OBP1] = data;
                 break;
             case WY:
                 bus->io[WY] = data;
@@ -191,6 +207,36 @@ void update_joyp(struct gb* gb) {
         gb->io[IF] |= I_JOYPAD;
     }
     gb->io[JOYP] = (gb->io[JOYP] & 0b11110000) | buttons;
+}
+
+void run_dma(struct gb* gb) {
+    if(gb->dma_cycles == 0) {
+        if(gb->dma_index == OAM_SIZE){
+            gb->dma_active = false;
+            return;
+        }
+        gb->dma_cycles += 4;
+        u16 addr = gb->io[DMA] << 8 | gb->dma_index;
+        u8 data;
+        if (addr < 0x4000) {
+            data = cart_read(gb->cart, addr & 0x3fff, CART_ROM0);
+        } else if (addr < 0x8000) {
+            data = cart_read(gb->cart, addr & 0x3fff, CART_ROM1);
+        } else if (addr < 0xa000) {
+            data = gb->vram[0][addr & 0x1fff];
+        } else if (addr < 0xc000) {
+            data = cart_read(gb->cart, addr, CART_RAM);
+        } else if (addr < 0xd000) {
+            data = gb->wram[0][addr & 0x0fff];
+        } else if (addr < 0xe000) {
+            data = gb->wram[1][addr & 0x0fff];
+        } else {
+            data = 0xff;
+        }
+        gb->oam[gb->dma_index] = data;
+        gb->dma_index++;
+    }
+    gb->dma_cycles--;
 }
 
 void gb_handle_event(struct gb* gb, SDL_Event* e) {

@@ -33,6 +33,13 @@ enum {
     STAT_I_LCYEQ = 1 << 6
 };
 
+enum {
+    OBJ_PAL = (1 << 4),
+    OBJ_XFLIP = (1 << 5),
+    OBJ_YFLIP = (1 << 6),
+    OBJ_BGOVER = (1 << 7)
+};
+
 struct gb;
 
 struct gb_ppu {
@@ -49,12 +56,20 @@ struct gb_ppu {
     int fineX;
     int fineY;
     int screenX;
-    int rendering_window;
+    bool rendering_window;
     int windowline;
+
+    u8 obj_tile_b0;
+    u8 obj_tile_b1;
+    u8 obj_tile_bgover;
+    u8 obj_tile_pal;
+
+    u8 objs[10];
+    u8 obj_ct;
 
     int cycle;
     int scanline;
-    int frame_complete;
+    bool frame_complete;
 };
 
 void init_ppu(struct gb* master, struct gb_ppu* ppu);

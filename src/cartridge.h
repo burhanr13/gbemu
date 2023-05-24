@@ -6,7 +6,7 @@
 #define ROM_BANK_SIZE 0x4000  // 16k
 #define ERAM_BANK_SIZE 0x2000 // 8k
 
-enum mbc { MBC0, MBC1, MBC2, MMM01, MBC3, MBC5, MBC6, MBC7 };
+enum mbc { MBC0, MBC1, MBC2, MBC3, MMM01, MBC5, MBC6, MBC7 };
 
 enum cart_region { CART_ROM0, CART_ROM1, CART_RAM };
 
@@ -26,6 +26,22 @@ struct cartridge {
             u8 cur_bank_2;
             u8 mode;
         } mbc1;
+        struct {
+            u8 ram_enable;
+            u8 cur_rom_bank;
+            u8 cur_ram_bank;
+        } mbc3;
+        struct {
+            u8 ram_enable;
+            union {
+                u16 cur_rom_bank;
+                struct {
+                    u8 cur_rom_bank_l;
+                    u8 cur_rom_bank_h;
+                };
+            };
+            u8 cur_ram_bank;
+        } mbc5;
     };
 };
 
