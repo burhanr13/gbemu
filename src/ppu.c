@@ -33,6 +33,13 @@ static void load_bg_tile(struct gb_ppu* ppu) {
     ppu->bg_tile_b1 = ppu->master->vram[0][tile_addr + 2 * ppu->fineY + 1];
 }
 
+static u8 reverse_byte(u8 b) {
+    b = (b & 0xf0) >> 4 | (b & 0x0f) << 4;
+    b = (b & 0xcc) >> 2 | (b & 0x33) << 2;
+    b = (b & 0xaa) >> 1 | (b & 0x55) << 1;
+    return b;
+}
+
 static void load_obj_tile(struct gb_ppu* ppu) {
     for (int i = 0; i < ppu->obj_ct; i++) {
         if (ppu->screenX != ppu->master->oam[ppu->objs[i] + 1] - 8) continue;
@@ -48,6 +55,10 @@ static void load_obj_tile(struct gb_ppu* ppu) {
         rel_y &= 0xf;
         u8 obj_b0 = ppu->master->vram[0][(tile_index << 4) + 2 * rel_y];
         u8 obj_b1 = ppu->master->vram[0][(tile_index << 4) + 2 * rel_y + 1];
+        if (obj_attr & OBJ_XFLIP) {
+            obj_b0 = reverse_byte(obj_b0);
+            obj_b1 = reverse_byte(obj_b1);
+        }
         u8 mask = ~(ppu->obj_tile_b0 | ppu->obj_tile_b1);
         ppu->obj_tile_b0 |= obj_b0 & mask;
         ppu->obj_tile_b1 |= obj_b1 & mask;
@@ -94,7 +105,7 @@ void ppu_clock(struct gb_ppu* ppu) {
                 if (rel_y >= 0 &&
                     rel_y <
                         ((ppu->master->io[LCDC] & LCDC_OBJ_SIZE) ? 16 : 8)) {
-                    ppu->objs[ppu->obj_ct++] = ppu->master->oam[2 * ppu->cycle];
+                    ppu->objs[ppu->obj_ct++] = 2 * ppu->cycle;
                 }
             }
         } else if (ppu->screenX < GB_SCREEN_W) {
