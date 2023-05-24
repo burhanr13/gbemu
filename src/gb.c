@@ -49,7 +49,8 @@ u8 read8(struct gb* bus, u16 addr) {
         return 0xff;
     }
     if (addr < 0xff4d) {
-        return bus->io[addr & 0x00ff];
+        if ((addr & 0xff) == DIV) return bus->div >> 8;
+        else return bus->io[addr & 0x00ff];
     }
     if (addr < 0xff80) { // cgb registers
         return 0xff;
@@ -112,7 +113,7 @@ void write8(struct gb* bus, u16 addr, u8 data) {
                     (bus->io[JOYP] & 0b11001111) | (data & 0b00110000);
                 break;
             case DIV:
-                bus->io[DIV] = 0x00;
+                bus->div = 0x0000;
                 break;
             case TIMA:
                 bus->io[TMA] = data;
@@ -181,13 +182,11 @@ void write16(struct gb* bus, u16 addr, u16 data) {
     write8(bus, addr + 1, data >> 8);
 }
 
-void clock_timers(struct gb* gb, long cycle) {
-    if ((cycle & 255) == 0) {
-        gb->io[DIV]++;
-    }
+void clock_timers(struct gb* gb) {
+    gb->div++;
     if (gb->io[TAC] & 0b100) {
-        static int freq[] = {1023, 15, 63, 255};
-        if ((cycle & freq[gb->io[TAC] & 0b011]) == 0) {
+        static int freq[] = {1024, 16, 64, 256};
+        if ((gb->div & (freq[gb->io[TAC] & 0b011] - 1)) == 0) {
             gb->io[TIMA]++;
             if (gb->io[TIMA] == 0) {
                 gb->io[TIMA] = gb->io[TMA];
