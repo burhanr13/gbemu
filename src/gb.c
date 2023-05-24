@@ -8,6 +8,8 @@
 #include "cartridge.h"
 
 u8 read8(struct gb* bus, u16 addr) {
+    bus->cpu.cycles += 4;
+
     if (bus->dma_active && addr < 0xff80) return 0xff;
 
     if (addr < 0x4000) {
@@ -60,6 +62,7 @@ u8 read8(struct gb* bus, u16 addr) {
 }
 
 void write8(struct gb* bus, u16 addr, u8 data) {
+    bus->cpu.cycles += 4;
     if (bus->dma_active && addr < 0xff80) return;
 
     if (addr < 0x4000) {
