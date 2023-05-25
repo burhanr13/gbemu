@@ -47,10 +47,10 @@ static void load_obj_tile(struct gb_ppu* ppu) {
         u8 tile_index = ppu->master->oam[ppu->objs[i] + 2];
         u8 obj_attr = ppu->master->oam[ppu->objs[i] + 3];
         if (ppu->master->io[LCDC] & LCDC_OBJ_SIZE) {
-            if (obj_attr & OBJ_YFLIP) rel_y = 16 - rel_y;
+            if (obj_attr & OBJ_YFLIP) rel_y = 15 - rel_y;
             tile_index &= ~1;
         } else {
-            if (obj_attr & OBJ_YFLIP) rel_y = 8 - rel_y;
+            if (obj_attr & OBJ_YFLIP) rel_y = 7 - rel_y;
         }
         rel_y &= 0xf;
         u8 obj_b0 = ppu->master->vram[0][(tile_index << 4) + 2 * rel_y];
@@ -74,8 +74,16 @@ void ppu_clock(struct gb_ppu* ppu) {
             ppu->master->io[IF] |= I_STAT;
         }
         ppu->master->io[STAT] |= STAT_LCYEQ;
+    } else {
+        ppu->master->io[STAT] &= ~STAT_LCYEQ;
     }
-    if (!(ppu->master->io[LCDC] & LCDC_ENABLE)) return;
+
+    if (!(ppu->master->io[LCDC] & LCDC_ENABLE)) {
+        ppu->cycle = 0;
+        ppu->scanline = 0;
+        ppu->master->io[LY] = 0;
+        ppu->master->io[STAT] &= ~STAT_MODE;
+    }
     if (ppu->scanline < GB_SCREEN_H) {
         if (ppu->cycle < MODE2_LEN) {
             if (ppu->cycle == 0) {
@@ -84,11 +92,12 @@ void ppu_clock(struct gb_ppu* ppu) {
                 if (ppu->master->io[STAT] & STAT_I_OAM)
                     ppu->master->io[IF] |= I_STAT;
 
-                if (ppu->scanline == 0) ppu->rendering_window = false;
-                if (ppu->scanline == ppu->master->io[WY] &&
+                if (ppu->scanline >= ppu->master->io[WY] &&
                     (ppu->master->io[LCDC] & LCDC_WINDOW_ENABLE)) {
                     ppu->rendering_window = true;
-                    ppu->windowline = 0;
+                    ppu->windowline = ppu->scanline - ppu->master->io[WY];
+                } else {
+                    ppu->rendering_window = false;
                 }
 
                 ppu->screenX = -7;
@@ -199,7 +208,6 @@ void ppu_clock(struct gb_ppu* ppu) {
     if (ppu->cycle == CYCLES_PER_SCANLINE) {
         ppu->cycle = 0;
         ppu->scanline++;
-        ppu->windowline++;
         if (ppu->scanline == SCANLINES_PER_FRAME) {
             ppu->scanline = 0;
             ppu->frame_complete = true;
