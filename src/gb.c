@@ -116,7 +116,7 @@ void write8(struct gb* bus, u16 addr, u8 data) {
                 bus->div = 0x0000;
                 break;
             case TIMA:
-                bus->io[TMA] = data;
+                bus->io[TIMA] = data;
                 break;
             case TMA:
                 bus->io[TMA] = data;
@@ -180,6 +180,30 @@ u16 read16(struct gb* bus, u16 addr) {
 void write16(struct gb* bus, u16 addr, u16 data) {
     write8(bus, addr, data);
     write8(bus, addr + 1, data >> 8);
+}
+
+void tick_gb(struct gb* gb) {
+    check_stat_irq(gb);
+    clock_timers(gb);
+    update_joyp(gb);
+    if (gb->dma_active) run_dma(gb);
+    ppu_clock(&gb->ppu);
+    cpu_clock(&gb->cpu);
+}
+
+void check_stat_irq(struct gb* gb) {
+    if (gb->io[LYC] == gb->io[LY]) {
+        gb->io[STAT] |= STAT_LYCEQ;
+    } else {
+        gb->io[STAT] &= ~STAT_LYCEQ;
+    }
+    bool new_stat_int =
+        ((gb->io[STAT] & STAT_LYCEQ) && (gb->io[STAT] & STAT_I_LYCEQ)) ||
+        ((gb->io[STAT] & STAT_MODE) == 0 && (gb->io[STAT] & STAT_I_HBLANK)) ||
+        ((gb->io[STAT] & STAT_MODE) == 1 && (gb->io[STAT] & STAT_I_VBLANK)) ||
+        ((gb->io[STAT] & STAT_MODE) == 2 && (gb->io[STAT] & STAT_I_OAM));
+    if (new_stat_int && !gb->prev_stat_int) gb->io[IF] |= I_STAT;
+    gb->prev_stat_int = new_stat_int;
 }
 
 void clock_timers(struct gb* gb) {

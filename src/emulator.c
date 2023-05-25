@@ -57,11 +57,7 @@ int main(int argc, char** argv) {
         SDL_LockTexture(texture, NULL, (void**) &gb->ppu.screen,
                         &gb->ppu.pitch);
         while (!gb->ppu.frame_complete) {
-            clock_timers(gb);
-            update_joyp(gb);
-            if (gb->dma_active) run_dma(gb);
-            ppu_clock(&gb->ppu);
-            cpu_clock(&gb->cpu);
+            tick_gb(gb);
             cycle++;
         }
         gb->ppu.frame_complete = false;

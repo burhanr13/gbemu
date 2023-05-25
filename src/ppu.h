@@ -26,11 +26,11 @@ enum {
 
 enum {
     STAT_MODE = 0b11, // 0: hblank 1: vblank 2: searching oam 3: drawing
-    STAT_LCYEQ = 1 << 2,
+    STAT_LYCEQ = 1 << 2,
     STAT_I_HBLANK = 1 << 3,
     STAT_I_VBLANK = 1 << 4,
     STAT_I_OAM = 1 << 5,
-    STAT_I_LCYEQ = 1 << 6
+    STAT_I_LYCEQ = 1 << 6
 };
 
 enum {

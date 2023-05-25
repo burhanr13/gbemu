@@ -70,16 +70,6 @@ static void load_obj_tile(struct gb_ppu* ppu) {
 }
 
 void ppu_clock(struct gb_ppu* ppu) {
-    if (ppu->master->io[LYC] == ppu->master->io[LY]) {
-        if (!(ppu->master->io[STAT] & STAT_LCYEQ) &&
-            (ppu->master->io[STAT] & STAT_I_LCYEQ)) {
-            ppu->master->io[IF] |= I_STAT;
-        }
-        ppu->master->io[STAT] |= STAT_LCYEQ;
-    } else {
-        ppu->master->io[STAT] &= ~STAT_LCYEQ;
-    }
-
     if (!(ppu->master->io[LCDC] & LCDC_ENABLE)) {
         ppu->cycle = 0;
         ppu->scanline = 0;
@@ -92,8 +82,6 @@ void ppu_clock(struct gb_ppu* ppu) {
             if (ppu->cycle == 0) {
                 ppu->master->io[STAT] &= ~STAT_MODE;
                 ppu->master->io[STAT] |= 2;
-                if (ppu->master->io[STAT] & STAT_I_OAM)
-                    ppu->master->io[IF] |= I_STAT;
 
                 if (ppu->scanline == 0) ppu->rendering_window = false;
                 if (ppu->scanline == ppu->master->io[WY]) {
@@ -195,17 +183,12 @@ void ppu_clock(struct gb_ppu* ppu) {
             ppu->obj_tile_pal <<= 1;
             ppu->obj_tile_bgover <<= 1;
         } else if (ppu->screenX == GB_SCREEN_W) {
-            ppu->screenX++;
             ppu->master->io[STAT] &= ~STAT_MODE;
-            if (ppu->master->io[STAT] & STAT_I_HBLANK)
-                ppu->master->io[IF] |= I_STAT;
         }
     } else if (ppu->scanline == GB_SCREEN_H && ppu->cycle == 0) {
         ppu->master->io[IF] |= I_VBLANK;
         ppu->master->io[STAT] &= ~STAT_MODE;
         ppu->master->io[STAT] |= 1;
-        if (ppu->master->io[STAT] & STAT_I_VBLANK)
-            ppu->master->io[IF] |= I_STAT;
     }
     ppu->cycle++;
     if (ppu->cycle == CYCLES_PER_SCANLINE) {

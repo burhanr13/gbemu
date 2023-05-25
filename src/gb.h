@@ -75,6 +75,8 @@ struct gb {
 
     u16 div;
 
+    bool prev_stat_int;
+
     u8 jp_dir;
     u8 jp_action;
 
@@ -90,8 +92,11 @@ void write16(struct gb* bus, u16 addr, u16 data);
 
 void gb_handle_event(struct gb* gb, SDL_Event* e);
 
+void check_stat_irq(struct gb* gb);
 void clock_timers(struct gb* gb);
 void update_joyp(struct gb* gb);
 void run_dma(struct gb* gb);
+
+void tick_gb(struct gb* gb);
 
 #endif
