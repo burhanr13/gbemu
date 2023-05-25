@@ -15,7 +15,8 @@ void init_ppu(struct gb* master, struct gb_ppu* ppu) {
 static void load_bg_tile(struct gb_ppu* ppu) {
     u16 tilemap_offset = TILEMAP_SIZE * ppu->tileY + ppu->tileX;
     u16 tilemap_start;
-    if (ppu->rendering_window && ppu->screenX >= (ppu->master->io[WX] - 7)) {
+    if ((ppu->master->io[LCDC] & LCDC_WINDOW_ENABLE) && ppu->rendering_window &&
+        ppu->screenX >= (ppu->master->io[WX] - 7)) {
         tilemap_start =
             (ppu->master->io[LCDC] & LCDC_WINDOW_TILE_AREA) ? 0x1c00 : 0x1800;
     } else {
@@ -84,6 +85,7 @@ void ppu_clock(struct gb_ppu* ppu) {
         ppu->scanline = 0;
         ppu->master->io[LY] = 0;
         ppu->master->io[STAT] &= ~STAT_MODE;
+        return;
     }
     if (ppu->scanline < GB_SCREEN_H) {
         if (ppu->cycle < MODE2_LEN) {
@@ -93,12 +95,11 @@ void ppu_clock(struct gb_ppu* ppu) {
                 if (ppu->master->io[STAT] & STAT_I_OAM)
                     ppu->master->io[IF] |= I_STAT;
 
+                if (ppu->scanline == 0) ppu->rendering_window = false;
                 if (ppu->scanline == ppu->master->io[WY]) {
                     ppu->windowline = 0;
+                    ppu->rendering_window = true;
                 }
-                ppu->rendering_window =
-                    ppu->scanline >= ppu->master->io[WY] &&
-                    (ppu->master->io[LCDC] & LCDC_WINDOW_ENABLE);
 
                 ppu->screenX = -7;
                 ppu->obj_ct = 0;
@@ -140,7 +141,8 @@ void ppu_clock(struct gb_ppu* ppu) {
 
             int color = 0;
             if (ppu->master->io[LCDC] & LCDC_BG_ENABLE) {
-                if (ppu->screenX == ppu->master->io[WX] - 7 &&
+                if ((ppu->master->io[LCDC] & LCDC_WINDOW_ENABLE) &&
+                    ppu->screenX == ppu->master->io[WX] - 7 &&
                     ppu->rendering_window) {
                     ppu->tileX = 0;
                     ppu->fineX = 0;
@@ -195,13 +197,13 @@ void ppu_clock(struct gb_ppu* ppu) {
         } else if (ppu->screenX == GB_SCREEN_W) {
             ppu->screenX++;
             ppu->master->io[STAT] &= ~STAT_MODE;
-            ppu->master->io[STAT] |= 1;
             if (ppu->master->io[STAT] & STAT_I_HBLANK)
                 ppu->master->io[IF] |= I_STAT;
         }
     } else if (ppu->scanline == GB_SCREEN_H && ppu->cycle == 0) {
         ppu->master->io[IF] |= I_VBLANK;
         ppu->master->io[STAT] &= ~STAT_MODE;
+        ppu->master->io[STAT] |= 1;
         if (ppu->master->io[STAT] & STAT_I_VBLANK)
             ppu->master->io[IF] |= I_STAT;
     }
