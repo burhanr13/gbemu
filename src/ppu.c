@@ -146,6 +146,7 @@ void ppu_clock(struct gb_ppu* ppu) {
                     ppu->fineX = 0;
                     ppu->tileY = (ppu->windowline >> 3) & (TILEMAP_SIZE - 1);
                     ppu->fineY = ppu->windowline & 0b111;
+                    ppu->windowline++;
                     load_bg_tile(ppu);
                 }
 
@@ -208,7 +209,6 @@ void ppu_clock(struct gb_ppu* ppu) {
     if (ppu->cycle == CYCLES_PER_SCANLINE) {
         ppu->cycle = 0;
         ppu->scanline++;
-        ppu->windowline++;
         if (ppu->scanline == SCANLINES_PER_FRAME) {
             ppu->scanline = 0;
             ppu->frame_complete = true;
