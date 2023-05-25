@@ -61,8 +61,8 @@ struct gb_ppu {
 
     u8 obj_tile_b0;
     u8 obj_tile_b1;
-    u8 obj_tile_bgover;
     u8 obj_tile_pal;
+    u8 obj_tile_bgover;
 
     u8 objs[10];
     u8 obj_ct;

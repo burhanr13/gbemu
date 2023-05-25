@@ -4,7 +4,7 @@
 
 #include "gb.h"
 
-Uint32 colors[] = {0x00ffffff, 0x0000d000, 0x00008000, 0x00000000};
+Uint32 colors[] = {0x00ffffff, 0x0000e000, 0x0009000, 0x00000000};
 
 void init_ppu(struct gb* master, struct gb_ppu* ppu) {
     ppu->master = master;
@@ -52,7 +52,6 @@ static void load_obj_tile(struct gb_ppu* ppu) {
         } else {
             if (obj_attr & OBJ_YFLIP) rel_y = 7 - rel_y;
         }
-        rel_y &= 0xf;
         u8 obj_b0 = ppu->master->vram[0][(tile_index << 4) + 2 * rel_y];
         u8 obj_b1 = ppu->master->vram[0][(tile_index << 4) + 2 * rel_y + 1];
         if (obj_attr & OBJ_XFLIP) {
@@ -62,8 +61,10 @@ static void load_obj_tile(struct gb_ppu* ppu) {
         u8 mask = ~(ppu->obj_tile_b0 | ppu->obj_tile_b1);
         ppu->obj_tile_b0 |= obj_b0 & mask;
         ppu->obj_tile_b1 |= obj_b1 & mask;
-        if (obj_attr & OBJ_PAL) ppu->obj_tile_pal &= mask;
-        if (obj_attr & OBJ_BGOVER) ppu->obj_tile_bgover &= mask;
+        ppu->obj_tile_pal &= ~mask;
+        ppu->obj_tile_bgover &= ~mask;
+        if (obj_attr & OBJ_PAL) ppu->obj_tile_pal |= mask;
+        if (obj_attr & OBJ_BGOVER) ppu->obj_tile_bgover |= mask;
     }
 }
 
@@ -92,13 +93,12 @@ void ppu_clock(struct gb_ppu* ppu) {
                 if (ppu->master->io[STAT] & STAT_I_OAM)
                     ppu->master->io[IF] |= I_STAT;
 
-                if (ppu->scanline >= ppu->master->io[WY] &&
-                    (ppu->master->io[LCDC] & LCDC_WINDOW_ENABLE)) {
-                    ppu->rendering_window = true;
-                    ppu->windowline = ppu->scanline - ppu->master->io[WY];
-                } else {
-                    ppu->rendering_window = false;
+                if (ppu->scanline == ppu->master->io[WY]) {
+                    ppu->windowline = 0;
                 }
+                ppu->rendering_window =
+                    ppu->scanline >= ppu->master->io[WY] &&
+                    (ppu->master->io[LCDC] & LCDC_WINDOW_ENABLE);
 
                 ppu->screenX = -7;
                 ppu->obj_ct = 0;
@@ -208,6 +208,7 @@ void ppu_clock(struct gb_ppu* ppu) {
     if (ppu->cycle == CYCLES_PER_SCANLINE) {
         ppu->cycle = 0;
         ppu->scanline++;
+        ppu->windowline++;
         if (ppu->scanline == SCANLINES_PER_FRAME) {
             ppu->scanline = 0;
             ppu->frame_complete = true;
