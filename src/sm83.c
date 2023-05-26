@@ -412,9 +412,8 @@ void run_instruction(struct sm83* cpu) {
                                               cpu->SP & 0x00ff, 0);
                                 break;
                             case 2: // LD A, (FF00+n)
-                                cpu->A = read8(
-                                    cpu->master,
-                                    0xff00 + read8(cpu->master, cpu->PC++));
+                                u8 num = read8(cpu->master, cpu->PC++);
+                                cpu->A = read8(cpu->master, 0xff00 + num);
                                 break;
                             case 3: // LD HL, SP+d
                                 disp = read8(cpu->master, cpu->PC++);

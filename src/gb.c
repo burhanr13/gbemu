@@ -208,16 +208,21 @@ void check_stat_irq(struct gb* gb) {
 
 void clock_timers(struct gb* gb) {
     gb->div++;
-    if (gb->io[TAC] & 0b100) {
-        static int freq[] = {1024, 16, 64, 256};
-        if ((gb->div & (freq[gb->io[TAC] & 0b011] - 1)) == 0) {
-            gb->io[TIMA]++;
-            if (gb->io[TIMA] == 0) {
-                gb->io[TIMA] = gb->io[TMA];
-                gb->io[IF] |= I_TIMER;
-            }
+    if (gb->timer_overflow) {
+        gb->io[TIMA] = gb->io[TMA];
+        gb->timer_overflow = false;
+    }
+    static const int freq[] = {1024, 16, 64, 256};
+    bool new_timer_inc =
+        (gb->io[TAC] & 0b100) && (gb->div & freq[gb->io[TAC] & 0b011]);
+    if (!new_timer_inc && gb->prev_timer_inc) {
+        gb->io[TIMA]++;
+        if (gb->io[TIMA] == 0) {
+            gb->timer_overflow = true;
+            gb->io[IF] |= I_TIMER;
         }
     }
+    gb->prev_timer_inc = new_timer_inc;
 }
 
 void update_joyp(struct gb* gb) {

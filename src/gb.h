@@ -75,6 +75,9 @@ struct gb {
 
     u16 div;
 
+    bool prev_timer_inc;
+    bool timer_overflow;
+
     bool prev_stat_int;
 
     u8 jp_dir;
