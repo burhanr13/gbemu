@@ -255,7 +255,7 @@ void run_dma(struct gb* gb) {
         } else if (addr < 0xa000) {
             data = gb->vram[0][addr & 0x1fff];
         } else if (addr < 0xc000) {
-            data = cart_read(gb->cart, addr, CART_RAM);
+            data = cart_read(gb->cart, addr & 0x1fff, CART_RAM);
         } else if (addr < 0xd000) {
             data = gb->wram[0][addr & 0x0fff];
         } else if (addr < 0xe000) {
