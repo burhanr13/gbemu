@@ -182,8 +182,8 @@ void write16(struct gb* bus, u16 addr, u16 data) {
 }
 
 void tick_gb(struct gb* gb) {
-    check_stat_irq(gb);
     clock_timers(gb);
+    check_stat_irq(gb);
     update_joyp(gb);
     if (gb->dma_active) run_dma(gb);
     ppu_clock(&gb->ppu);
