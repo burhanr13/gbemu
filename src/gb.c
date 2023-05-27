@@ -9,8 +9,7 @@
 
 u8 read8(struct gb* bus, u16 addr) {
     bus->cpu.cycles += 4;
-
-    if (bus->dma_active && addr < 0xff80) return 0xff;
+    if (bus->dma_active && addr < 0xff00) return 0xff;
 
     if (addr < 0x4000) {
         return cart_read(bus->cart, addr, CART_ROM0);
@@ -64,7 +63,7 @@ u8 read8(struct gb* bus, u16 addr) {
 
 void write8(struct gb* bus, u16 addr, u8 data) {
     bus->cpu.cycles += 4;
-    if (bus->dma_active && addr < 0xff80) return;
+    if (bus->dma_active && addr < 0xff00) return;
 
     if (addr < 0x4000) {
         cart_write(bus->cart, addr, CART_ROM0, data);
@@ -209,17 +208,17 @@ void check_stat_irq(struct gb* gb) {
 void clock_timers(struct gb* gb) {
     gb->div++;
     if (gb->timer_overflow) {
+        gb->io[IF] |= I_TIMER;
         gb->io[TIMA] = gb->io[TMA];
         gb->timer_overflow = false;
     }
     static const int freq[] = {1024, 16, 64, 256};
     bool new_timer_inc =
-        (gb->io[TAC] & 0b100) && (gb->div & freq[gb->io[TAC] & 0b011]);
+        (gb->io[TAC] & 0b100) && (gb->div & (freq[gb->io[TAC] & 0b011]) / 2);
     if (!new_timer_inc && gb->prev_timer_inc) {
         gb->io[TIMA]++;
         if (gb->io[TIMA] == 0) {
             gb->timer_overflow = true;
-            gb->io[IF] |= I_TIMER;
         }
     }
     gb->prev_timer_inc = new_timer_inc;
