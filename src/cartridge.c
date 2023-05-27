@@ -1,7 +1,11 @@
 #include "cartridge.h"
 
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <unistd.h>
 
 #include "types.h"
 
@@ -27,6 +31,24 @@ struct cartridge* cart_create(char* filename) {
     else {
         fclose(fp);
         return NULL;
+    }
+    bool battery = false;
+    switch (data[0]) {
+        case 0x03:
+        case 0x06:
+        case 0x09:
+        case 0x0d:
+        case 0x0f:
+        case 0x10:
+        case 0x13:
+        case 0x1b:
+        case 0x1e:
+        case 0x22:
+            battery = true;
+            break;
+        default:
+            battery = false;
+            break;
     }
     int rom_banks;
     if (0 <= data[1] && data[1] <= 8) rom_banks = 2 << data[1];
@@ -58,6 +80,7 @@ struct cartridge* cart_create(char* filename) {
     }
     struct cartridge* cart = calloc(1, sizeof(*cart));
     cart->mapper = mapper;
+    cart->battery = battery;
     cart->rom_banks = rom_banks;
     cart->ram_banks = ram_banks;
     cart->rom = malloc(cart->rom_banks * ROM_BANK_SIZE);
@@ -69,14 +92,40 @@ struct cartridge* cart_create(char* filename) {
         return NULL;
     }
     fclose(fp);
-    if (cart->ram_banks) cart->ram = calloc(cart->ram_banks, ERAM_BANK_SIZE);
+
+    if (cart->ram_banks) {
+        if (cart->battery) {
+            int i = strlen(filename) - 1;
+            while (i >= 0 && filename[i] != '.') i--;
+            char* sav_filename = malloc(i + 5);
+            strncpy(sav_filename, filename, i + 1);
+            sav_filename[i + 1] = 's';
+            sav_filename[i + 2] = 'a';
+            sav_filename[i + 3] = 'v';
+            sav_filename[i + 4] = '\0';
+            cart->sav_fd =
+                open(sav_filename, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+            free(sav_filename);
+            ftruncate(cart->sav_fd, cart->ram_banks * ERAM_BANK_SIZE);
+            cart->ram =
+                mmap(NULL, cart->ram_banks * ERAM_BANK_SIZE,
+                     PROT_READ | PROT_WRITE, MAP_SHARED, cart->sav_fd, 0);
+        } else {
+            cart->ram = calloc(cart->ram_banks, ERAM_BANK_SIZE);
+        }
+    }
     return cart;
 }
 
 void cart_destroy(struct cartridge* cart) {
     if (!cart) return;
     free(cart->rom);
-    free(cart->ram);
+    if (cart->battery) {
+        munmap(cart->ram, cart->ram_banks * ERAM_BANK_SIZE);
+        close(cart->sav_fd);
+    } else {
+        free(cart->ram);
+    }
     free(cart);
 }
 

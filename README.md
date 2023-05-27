@@ -10,12 +10,12 @@ An emulator for the Game Boy, a handheld game console from the 1990s which uses 
 - Background rendering
 - window rendering
 - object rendering
+- battery saves with memory mapped files
 
 ### In Progress:
 - bug fixes
 
 ### Todo:
-- battery saves with memory mapped files
 - sound
 - other mappers and RTC
 - timing/accuracy

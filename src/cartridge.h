@@ -19,6 +19,9 @@ struct cartridge {
     u8 (*rom)[ROM_BANK_SIZE];
     u8 (*ram)[ERAM_BANK_SIZE];
 
+    bool battery;
+    int sav_fd;
+
     union {
         struct {
             u8 ram_enable;
