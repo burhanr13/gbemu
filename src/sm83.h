@@ -3,6 +3,8 @@
 
 #include "types.h"
 
+#define CPU_CLOCK_SPEED (1 << 22)
+
 enum { FZ = (1 << 7), FN = (1 << 6), FH = (1 << 5), FC = (1 << 4) };
 
 struct gb;

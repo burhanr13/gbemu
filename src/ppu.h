@@ -45,6 +45,8 @@ struct gb;
 struct gb_ppu {
     struct gb* master;
 
+    SDL_Renderer* renderer;
+    SDL_Texture* texture;
     Uint32* screen;
     int pitch;
 

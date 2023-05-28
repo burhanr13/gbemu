@@ -48,8 +48,7 @@ u8 read8(struct gb* bus, u16 addr) {
         return 0xff;
     }
     if (addr < 0xff4d) {
-        if ((addr & 0xff) == DIV) return bus->div >> 8;
-        else return bus->io[addr & 0x00ff];
+        return bus->io[addr & 0x00ff];
     }
     if (addr < 0xff80) { // cgb registers
         return 0xff;
@@ -112,7 +111,8 @@ void write8(struct gb* bus, u16 addr, u8 data) {
                     (bus->io[JOYP] & 0b11001111) | (data & 0b00110000);
                 break;
             case DIV:
-                bus->div = 0x0000;
+                bus->div = 0;
+                bus->io[DIV] = 0;
                 break;
             case TIMA:
                 bus->io[TIMA] = data;
@@ -242,6 +242,7 @@ void check_stat_irq(struct gb* gb) {
 
 void clock_timers(struct gb* gb) {
     gb->div++;
+    gb->io[DIV] = gb->div >> 8;
     if (gb->timer_overflow) {
         gb->io[IF] |= I_TIMER;
         gb->io[TIMA] = gb->io[TMA];

@@ -51,7 +51,7 @@ void apu_clock(struct gb_apu* apu) {
         apu->sample_buf[apu->sample_ind++] = l_sample;
         apu->sample_buf[apu->sample_ind++] = r_sample;
         if (apu->sample_ind == SAMPLE_BUF_LEN) {
-            SDL_QueueAudio(apu->audio_id, apu->sample_buf, SAMPLE_BUF_LEN);
+            apu->samples_full = true;
             apu->sample_ind = 0;
         }
     }

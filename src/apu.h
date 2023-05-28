@@ -7,8 +7,8 @@
 
 #define APU_DIV_RATE 8192
 
-#define SAMPLE_FREQ 32768
-#define SAMPLE_RATE 128
+#define SAMPLE_FREQ 44100
+#define SAMPLE_RATE (CPU_CLOCK_SPEED / SAMPLE_FREQ)
 #define SAMPLE_BUF_LEN 4096
 
 enum {
@@ -24,9 +24,10 @@ struct gb_apu {
 
     u16 apu_div;
 
-    u8 sample_buf[SAMPLE_BUF_LEN];
+    u8* sample_buf;
     int sample_ind;
     SDL_AudioDeviceID audio_id;
+    bool samples_full;
 
     u16 ch1_counter;
     u16 ch1_wavelen;

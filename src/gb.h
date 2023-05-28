@@ -84,7 +84,7 @@ struct gb {
 
     u8 IE;
 
-    u16 div;
+    unsigned long div;
 
     bool prev_timer_inc;
     bool timer_overflow;
