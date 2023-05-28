@@ -1,6 +1,7 @@
 #ifndef GB_H
 #define GB_H
 
+#include "apu.h"
 #include "cartridge.h"
 #include "ppu.h"
 #include "sm83.h"
@@ -10,7 +11,7 @@
 #define WRAM_BANK_SIZE 0x1000 // 4k
 
 #define OAM_SIZE 0xa0
-#define IO_SIZE  0x80
+#define IO_SIZE 0x80
 #define HRAM_SIZE 0x7f
 
 enum {
@@ -40,6 +41,11 @@ enum {
     TAC = 0x07,  // timer control
     IF = 0x0f,   // interrupt flag
     // 0x10 - 0x3f : sound
+    NR10 = 0x10, // ch1 sweep
+    NR11 = 0x11, // ch1 length timer/duty cycle
+    NR12 = 0x12, // ch1 volume/envelope
+    NR13 = 0x13, // ch1 wavelen low
+    NR14 = 0x14, // ch1 wavelen hi/control
     // 0x40 - 0x4b : video
     LCDC = 0x40, // lcd control
     STAT = 0x41, // lcd status
@@ -47,7 +53,7 @@ enum {
     SCX = 0x43,  // scroll x
     LY = 0x44,   // lcd y
     LYC = 0x45,  // lcd y compare
-    DMA = 0x46, // oam dma start
+    DMA = 0x46,  // oam dma start
     BGP = 0x47,  // bg palette
     OBP0 = 0x48, // obj palette 0
     OBP1 = 0x49, // obj palette 1
@@ -59,6 +65,7 @@ enum {
 struct gb {
     struct sm83 cpu;
     struct gb_ppu ppu;
+    struct gb_apu apu;
 
     struct cartridge* cart;
 

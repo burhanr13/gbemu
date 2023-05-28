@@ -1,22 +1,19 @@
 # gbemu
 
-An emulator for the Game Boy, a handheld game console from the 1990s which uses a CPU similar to the 8080 and Z80. At the current stage some popular games are playable such as "Tetris", "Dr. Mario",  "Pokemon Red and Blue", and "The Legend of Zelda: Link's Awakening".
+An emulator for the Game Boy, a handheld game console from the 1990s. Currently many games are playable with only minor graphical or timing issues.
 
 ## Task List/Features
 
 ### Completed:
 - CPU
+- graphics
+- saving
 - MBC1,3,5
-- Background rendering
-- window rendering
-- object rendering
-- battery saves with memory mapped files
 
 ### In Progress:
-- bug fixes
+- audio
 
 ### Todo:
-- sound
 - other mappers and RTC
 - timing/accuracy
 - game boy color support

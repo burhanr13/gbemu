@@ -3,6 +3,7 @@
 
 #include <SDL2/SDL.h>
 
+#include "apu.h"
 #include "cartridge.h"
 #include "gb.h"
 #include "ppu.h"
@@ -31,10 +32,20 @@ int main(int argc, char** argv) {
                                              SDL_TEXTUREACCESS_STREAMING,
                                              GB_SCREEN_W, GB_SCREEN_H);
 
+    SDL_AudioSpec audio_spec = {.freq = SAMPLE_FREQ,
+                                .format = AUDIO_U8,
+                                .channels = 2,
+                                .samples = SAMPLE_BUF_LEN / 2};
+    SDL_AudioDeviceID audio_id =
+        SDL_OpenAudioDevice(NULL, 0, &audio_spec, NULL, 0);
+    SDL_PauseAudioDevice(audio_id, 0);
+
     struct gb* gb = calloc(1, sizeof(*gb));
     gb->cart = cart;
     init_cpu(gb, &gb->cpu);
     init_ppu(gb, &gb->ppu);
+    init_apu(gb, &gb->apu);
+    gb->apu.audio_id = audio_id;
 
     long cycle = 0;
     long frame = 0;
@@ -68,12 +79,16 @@ int main(int argc, char** argv) {
         SDL_RenderPresent(renderer);
         frame++;
 
-        long wait_time = (1000 * frame) / FPS + start_time - SDL_GetTicks64();
-        if(wait_time > 0) SDL_Delay(wait_time);
+        long wait_time = (1000 * frame) / FPS + start_time -
+        SDL_GetTicks64(); if(wait_time > 0) SDL_Delay(wait_time);
+        //while (SDL_GetQueuedAudioSize(audio_id))
+        //    ;
     }
 
     free(gb);
     cart_destroy(cart);
+
+    SDL_CloseAudioDevice(audio_id);
 
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
