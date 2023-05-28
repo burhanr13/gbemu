@@ -13,27 +13,44 @@ void init_apu(struct gb* master, struct gb_apu* apu) {
 
 u8 get_sample_ch1(struct gb_apu* apu) {
     u8 sample = (duty_cycles[2] & (1 << (apu->ch1_duty_index & 7))) ? 1 : 0;
-    sample *= 10;
+    sample *= 20;
+    return sample;
+}
+
+u8 get_sample_ch2(struct gb_apu* apu) {
+    u8 sample = (duty_cycles[2] & (1 << (apu->ch2_duty_index & 7))) ? 1 : 0;
+    sample *= 20;
     return sample;
 }
 
 void apu_clock(struct gb_apu* apu) {
-    apu->ch1_counter += 2;
-    if (apu->ch1_counter == 2048) {
-        apu->ch1_counter = apu->ch1_wavelen;
-        apu->ch1_duty_index++;
+    if (apu->master->div % 4 == 0) {
+        apu->ch1_counter++;
+        if (apu->ch1_counter == 2048) {
+            apu->ch1_counter = apu->ch1_wavelen;
+            apu->ch1_duty_index++;
+        }
+        apu->ch2_counter++;
+        if (apu->ch2_counter == 2048) {
+            apu->ch2_counter = apu->ch2_wavelen;
+            apu->ch2_duty_index++;
+        }
     }
     // same for other channels
 
     if (apu->master->div % SAMPLE_RATE == 0) {
         u8 ch1_sample = get_sample_ch1(apu);
+        u8 ch2_sample = get_sample_ch2(apu);
 
         u8 l_sample = 0, r_sample = 0;
         l_sample += ch1_sample;
-        r_sample = ch1_sample;
+        l_sample += ch2_sample;
+        r_sample += ch1_sample;
+        r_sample += ch2_sample;
+
         apu->sample_buf[apu->sample_ind++] = l_sample;
         apu->sample_buf[apu->sample_ind++] = r_sample;
-        if(apu->sample_ind == SAMPLE_BUF_LEN) {
+        if (apu->sample_ind == SAMPLE_BUF_LEN) {
             SDL_QueueAudio(apu->audio_id, apu->sample_buf, SAMPLE_BUF_LEN);
             apu->sample_ind = 0;
         }

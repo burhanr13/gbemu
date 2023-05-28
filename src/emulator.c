@@ -9,7 +9,7 @@
 #include "ppu.h"
 #include "sm83.h"
 
-#define FPS 60
+#define FPS 59.7
 
 int main(int argc, char** argv) {
     if (argc < 2) {
@@ -79,10 +79,8 @@ int main(int argc, char** argv) {
         SDL_RenderPresent(renderer);
         frame++;
 
-        long wait_time = (1000 * frame) / FPS + start_time -
-        SDL_GetTicks64(); if(wait_time > 0) SDL_Delay(wait_time);
-        //while (SDL_GetQueuedAudioSize(audio_id))
-        //    ;
+        long wait_time = (1000 * frame) / FPS + start_time - SDL_GetTicks64();
+        if (wait_time > 0) SDL_Delay(wait_time);
     }
 
     free(gb);

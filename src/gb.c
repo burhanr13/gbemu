@@ -144,6 +144,22 @@ void write8(struct gb* bus, u16 addr, u8 data) {
                 }
                 bus->io[NR14] = data & NRX4_LEN_ENABLE;
                 break;
+            case NR21:
+                break;
+            case NR22:
+                break;
+            case NR23:
+                bus->apu.ch2_wavelen = (bus->apu.ch2_wavelen & 0xff00) | data;
+                break;
+            case NR24:
+                bus->apu.ch2_wavelen = (bus->apu.ch2_wavelen & 0x00ff) |
+                                       ((data & NRX4_WVLEN_HI) << 8);
+                if (data & NRX4_TRIGGER) {
+                    bus->apu.ch2_counter = bus->apu.ch2_wavelen;
+                    bus->apu.ch2_duty_index = 0;
+                }
+                bus->io[NR24] = data & NRX4_LEN_ENABLE;
+                break;
             case LCDC:
                 bus->io[LCDC] = data;
                 break;
@@ -200,8 +216,8 @@ void write16(struct gb* bus, u16 addr, u16 data) {
 }
 
 void tick_gb(struct gb* gb) {
-    clock_timers(gb);
     check_stat_irq(gb);
+    clock_timers(gb);
     update_joyp(gb);
     if (gb->dma_active) run_dma(gb);
     ppu_clock(&gb->ppu);
