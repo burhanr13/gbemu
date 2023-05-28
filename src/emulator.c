@@ -83,13 +83,14 @@ int main(int argc, char** argv) {
         SDL_Event e;
 
         Uint64 time = SDL_GetTicks64();
-        if (time - last_poll_time >= 17) {
+        if (time - last_poll_time >= 50) {
             last_poll_time = time;
             while (SDL_PollEvent(&e)) {
                 if (e.type == SDL_QUIT) running = false;
                 gb_handle_event(gb, &e);
             }
         }
+        
     }
 
     SDL_CloseAudioDevice(audio_id);

@@ -15,7 +15,7 @@ void init_cpu(struct gb* master, struct sm83* cpu) {
     cpu->HL = 0x014d;
     cpu->SP = 0xfffe;
     cpu->PC = 0x0100;
-    cpu->master->io[LCDC] |= LCDC_ENABLE;
+    cpu->master->io[LCDC] = 0x91;
 }
 
 static inline void set_flag(struct sm83* cpu, int flag, int val) {
