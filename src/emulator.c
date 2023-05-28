@@ -45,14 +45,12 @@ int main(int argc, char** argv) {
     init_cpu(gb, &gb->cpu);
     init_ppu(gb, &gb->ppu);
     init_apu(gb, &gb->apu);
-    gb->apu.audio_id = audio_id;
 
     long cycle = 0;
     long frame = 0;
+    double fps = 0.0;
 
-    Uint64 start_time = SDL_GetTicks64();
-
-    int running = 1;
+    bool running = true;
     while (running) {
         if (gb->cpu.ill) {
             printf("illegal instruction reached -- terminating\n");
@@ -61,7 +59,7 @@ int main(int argc, char** argv) {
 
         SDL_Event e;
         while (SDL_PollEvent(&e)) {
-            if (e.type == SDL_QUIT) running = 0;
+            if (e.type == SDL_QUIT) running = false;
             gb_handle_event(gb, &e);
         }
 
@@ -69,6 +67,10 @@ int main(int argc, char** argv) {
                         &gb->ppu.pitch);
         while (!gb->ppu.frame_complete) {
             tick_gb(gb);
+            if(gb->apu.samples_full) {
+                SDL_QueueAudio(audio_id, gb->apu.sample_buf, SAMPLE_BUF_LEN);
+                gb->apu.samples_full = false;
+            }
             cycle++;
         }
         gb->ppu.frame_complete = false;
@@ -79,9 +81,10 @@ int main(int argc, char** argv) {
         SDL_RenderPresent(renderer);
         frame++;
 
-        long wait_time = (1000 * frame) / FPS + start_time - SDL_GetTicks64();
-        if (wait_time > 0) SDL_Delay(wait_time);
+        while (SDL_GetQueuedAudioSize(audio_id) > 5 * SAMPLE_BUF_LEN) SDL_Delay(1);
+        fps = 1000.0 * frame / SDL_GetTicks64();
     }
+    printf("cycles: %ld, frames: %ld, fps: %lf\n", cycle, frame, fps);
 
     free(gb);
     cart_destroy(cart);

@@ -1,7 +1,5 @@
 #include "apu.h"
 
-#include <SDL2/SDL.h>
-
 #include "gb.h"
 
 u8 duty_cycles[] = {0b11111110, 0b01111110, 0b01111000, 0b10000001};
@@ -51,7 +49,7 @@ void apu_clock(struct gb_apu* apu) {
         apu->sample_buf[apu->sample_ind++] = l_sample;
         apu->sample_buf[apu->sample_ind++] = r_sample;
         if (apu->sample_ind == SAMPLE_BUF_LEN) {
-            SDL_QueueAudio(apu->audio_id, apu->sample_buf, SAMPLE_BUF_LEN);
+            apu->samples_full = true;
             apu->sample_ind = 0;
         }
     }

@@ -1,15 +1,13 @@
 #ifndef APU_H
 #define APU_H
 
-#include <SDL2/SDL.h>
-
 #include "types.h"
 
 #define APU_DIV_RATE 8192
 
-#define SAMPLE_FREQ 32768
-#define SAMPLE_RATE 128
-#define SAMPLE_BUF_LEN 4096
+#define SAMPLE_FREQ 44100
+#define SAMPLE_RATE ((1 << 22) / SAMPLE_FREQ)
+#define SAMPLE_BUF_LEN 1024
 
 enum {
     NRX4_WVLEN_HI = 0b00000111,
@@ -26,7 +24,7 @@ struct gb_apu {
 
     u8 sample_buf[SAMPLE_BUF_LEN];
     int sample_ind;
-    SDL_AudioDeviceID audio_id;
+    bool samples_full;
 
     u16 ch1_counter;
     u16 ch1_wavelen;
