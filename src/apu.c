@@ -41,6 +41,14 @@ u8 get_sample_ch3(struct gb_apu* apu) {
 }
 
 void apu_clock(struct gb_apu* apu) {
+    if (apu->master->div % 2 == 0) {
+        apu->ch3_counter++;
+        if (apu->ch3_counter == 2048) {
+            apu->ch3_counter = apu->ch3_wavelen;
+            apu->ch3_sample_index++;
+        }
+    }
+
     if (apu->master->div % 4 == 0) {
         apu->ch1_counter++;
         if (apu->ch1_counter == 2048) {
@@ -52,12 +60,6 @@ void apu_clock(struct gb_apu* apu) {
         if (apu->ch2_counter == 2048) {
             apu->ch2_counter = apu->ch2_wavelen;
             apu->ch2_duty_index++;
-        }
-
-        apu->ch3_counter++;
-        if (apu->ch3_counter == 2048) {
-            apu->ch3_counter = apu->ch3_wavelen;
-            apu->ch3_sample_index++;
         }
     }
     // same for other channels

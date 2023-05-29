@@ -16,7 +16,6 @@ DEPS := $(OBJS:.o=.d)
 all: $(BUILD_DIR)/$(TARGET_EXEC)
 
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
-	rm ./$(TARGET_EXEC)
 	$(CC) -o $@ $(CFLAGS) $(CPPFLAGS) $^ $(LDFLAGS)
 	cp $(BUILD_DIR)/$(TARGET_EXEC) ./$(TARGET_EXEC)
 
@@ -28,4 +27,4 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 clean:
 	rm -rf $(BUILD_DIR)
 
--include $(DEPS)%    
+-include $(DEPS)
