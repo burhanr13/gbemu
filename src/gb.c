@@ -106,6 +106,10 @@ void write8(struct gb* bus, u16 addr, u8 data) {
         return;
     }
     if (addr < 0xff80) {
+        if((addr & 0x00f0) == WAVERAM) {
+            (bus->io + WAVERAM)[addr & 0x000f] = data;
+            return;
+        }
         switch (addr & 0x00ff) {
             case JOYP:
                 bus->io[JOYP] =
@@ -127,6 +131,8 @@ void write8(struct gb* bus, u16 addr, u8 data) {
                 bus->io[IF] = data & 0b00011111;
                 break;
             case NR10:
+                if ((data & NR10_PACE) == 0) bus->apu.ch1_sweep_pace = 0;
+                bus->io[NR10] = data;
                 break;
             case NR11:
                 bus->apu.ch1_len_counter = data & NRX1_LEN;
@@ -150,6 +156,8 @@ void write8(struct gb* bus, u16 addr, u8 data) {
                     bus->apu.ch1_env_pace = bus->io[NR12] & NRX2_PACE;
                     bus->apu.ch1_env_dir = bus->io[NR12] & NRX2_DIR;
                     bus->apu.ch1_volume = (bus->io[NR12] & NRX2_VOL) >> 4;
+                    bus->apu.ch1_sweep_pace = (bus->io[NR10] & NR10_PACE) >> 4;
+                    bus->apu.ch1_sweep_counter = 0;
                 }
                 bus->io[NR14] = data & NRX4_LEN_ENABLE;
                 break;
@@ -177,6 +185,29 @@ void write8(struct gb* bus, u16 addr, u8 data) {
                     bus->apu.ch2_volume = (bus->io[NR22] & NRX2_VOL) >> 4;
                 }
                 bus->io[NR24] = data & NRX4_LEN_ENABLE;
+                break;
+            case NR30:
+                if (!(data & 0b10000000)) bus->apu.ch3_enable = false;
+                bus->io[NR30] = data & 0b10000000;
+                break;
+            case NR31:
+                bus->apu.ch3_len_counter = data;
+                break;
+            case NR32:
+                bus->io[NR32] = data & 0b01100000;
+                break;
+            case NR33:
+                bus->apu.ch3_wavelen = (bus->apu.ch3_wavelen & 0xff00) | data;
+                break;
+            case NR34:
+                bus->apu.ch3_wavelen = (bus->apu.ch3_wavelen & 0x00ff) |
+                                       ((data & NRX4_WVLEN_HI) << 8);
+                if (data & NRX4_TRIGGER) {
+                    bus->apu.ch3_enable = true;
+                    bus->apu.ch3_counter = bus->apu.ch2_wavelen;
+                    bus->apu.ch3_sample_index = 0;
+                }
+                bus->io[NR34] = data & NRX4_LEN_ENABLE;
                 break;
             case LCDC:
                 bus->io[LCDC] = data;

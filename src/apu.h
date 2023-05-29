@@ -19,6 +19,8 @@ enum {
     NRX4_TRIGGER = 1 << 7
 };
 
+enum { NR10_SLOP = 0b00000111, NR10_DIR = 1 << 3, NR10_PACE = 0b01110000 };
+
 struct gb;
 
 struct gb_apu {
@@ -39,6 +41,8 @@ struct gb_apu {
     bool ch1_env_dir;
     u8 ch1_volume;
     u8 ch1_len_counter;
+    u8 ch1_sweep_pace;
+    u8 ch1_sweep_counter;
 
     bool ch2_enable;
     u16 ch2_counter;
@@ -49,6 +53,12 @@ struct gb_apu {
     bool ch2_env_dir;
     u8 ch2_volume;
     u8 ch2_len_counter;
+
+    bool ch3_enable;
+    u16 ch3_counter;
+    u8 ch3_wavelen;
+    u8 ch3_sample_index;
+    u8 ch3_len_counter;
 };
 
 void init_apu(struct gb* master, struct gb_apu* apu);
