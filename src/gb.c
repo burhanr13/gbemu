@@ -129,7 +129,7 @@ void write8(struct gb* bus, u16 addr, u8 data) {
             case NR10:
                 break;
             case NR11:
-                bus->apu.ch1_len = data & NRX1_LEN;
+                bus->apu.ch1_len_counter = data & NRX1_LEN;
                 bus->io[NR11] = data & NRX1_DUTY;
                 break;
             case NR12:
@@ -146,13 +146,15 @@ void write8(struct gb* bus, u16 addr, u8 data) {
                     bus->apu.ch1_enable = true;
                     bus->apu.ch1_counter = bus->apu.ch1_wavelen;
                     bus->apu.ch1_duty_index = 0;
-                    bus->apu.ch1_vol_counter = 0;
+                    bus->apu.ch1_env_counter = 0;
+                    bus->apu.ch1_env_pace = bus->io[NR12] & NRX2_PACE;
+                    bus->apu.ch1_env_dir = bus->io[NR12] & NRX2_DIR;
                     bus->apu.ch1_volume = (bus->io[NR12] & NRX2_VOL) >> 4;
                 }
                 bus->io[NR14] = data & NRX4_LEN_ENABLE;
                 break;
             case NR21:
-                bus->apu.ch2_len = data & NRX1_LEN;
+                bus->apu.ch2_len_counter = data & NRX1_LEN;
                 bus->io[NR21] = data & NRX1_DUTY;
                 break;
             case NR22:
@@ -169,7 +171,9 @@ void write8(struct gb* bus, u16 addr, u8 data) {
                     bus->apu.ch2_enable = true;
                     bus->apu.ch2_counter = bus->apu.ch2_wavelen;
                     bus->apu.ch2_duty_index = 0;
-                    bus->apu.ch2_vol_counter = 0;
+                    bus->apu.ch2_env_counter = 0;
+                    bus->apu.ch2_env_pace = bus->io[NR22] & NRX2_PACE;
+                    bus->apu.ch2_env_dir = bus->io[NR22] & NRX2_DIR;
                     bus->apu.ch2_volume = (bus->io[NR22] & NRX2_VOL) >> 4;
                 }
                 bus->io[NR24] = data & NRX4_LEN_ENABLE;

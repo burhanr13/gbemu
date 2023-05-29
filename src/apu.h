@@ -34,17 +34,21 @@ struct gb_apu {
     u16 ch1_counter;
     u16 ch1_wavelen;
     u8 ch1_duty_index;
-    u8 ch1_vol_counter;
+    u8 ch1_env_counter;
+    u8 ch1_env_pace;
+    bool ch1_env_dir;
     u8 ch1_volume;
-    u8 ch1_len;
+    u8 ch1_len_counter;
 
     bool ch2_enable;
     u16 ch2_counter;
     u16 ch2_wavelen;
     u8 ch2_duty_index;
-    u8 ch2_vol_counter;
+    u8 ch2_env_counter;
+    u8 ch2_env_pace;
+    bool ch2_env_dir;
     u8 ch2_volume;
-    u8 ch2_len;
+    u8 ch2_len_counter;
 };
 
 void init_apu(struct gb* master, struct gb_apu* apu);

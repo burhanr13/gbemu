@@ -12,7 +12,7 @@ void init_apu(struct gb* master, struct gb_apu* apu) {
 u8 get_sample_ch1(struct gb_apu* apu) {
     u8 sample = (duty_cycles[(apu->master->io[NR11] & NRX1_DUTY) >> 6] &
                  (1 << (apu->ch1_duty_index & 7)))
-                    ? 1 //apu->ch1_volume
+                    ? apu->ch1_volume
                     : 0;
     return sample;
 }
@@ -20,7 +20,7 @@ u8 get_sample_ch1(struct gb_apu* apu) {
 u8 get_sample_ch2(struct gb_apu* apu) {
     u8 sample = (duty_cycles[(apu->master->io[NR21] & NRX1_DUTY) >> 6] &
                  (1 << (apu->ch2_duty_index & 7)))
-                    ? 1 // apu->ch2_volume
+                    ? apu->ch2_volume
                     : 0;
     return sample;
 }
@@ -58,51 +58,54 @@ void apu_clock(struct gb_apu* apu) {
             apu->sample_ind = 0;
         }
     }
-    if (apu->master->div % APU_DIV_RATE == 0) apu->apu_div++;
 
-    if (apu->apu_div % 2 == 0) {
-        apu->ch1_len++;
-        if (apu->ch1_len == 64) {
-            apu->ch1_len--;
-            if (apu->master->io[NR14] & NRX4_LEN_ENABLE)
-                apu->ch1_enable = false;
-        }
+    if (apu->master->div % APU_DIV_RATE == 0) {
+        apu->apu_div++;
 
-        apu->ch2_len++;
-        if (apu->ch2_len == 64) {
-            apu->ch2_len--;
-            if (apu->master->io[NR24] & NRX4_LEN_ENABLE)
-                apu->ch2_enable = false;
-        }
-        // tick length timer
-    }
-    if (apu->apu_div % 4 == 0) {
-        // tick ch1 sweep
-    }
-    if (apu->apu_div % 8 == 0) {
-        apu->ch1_vol_counter++;
-        if (apu->ch1_vol_counter == (apu->master->io[NR12] & NRX2_PACE)) {
-            apu->ch1_vol_counter = 0;
-            if (apu->master->io[NR12] & NRX2_DIR) {
-                apu->ch1_volume++;
-                if (apu->ch1_volume == 0x10) apu->ch1_volume = 0xf;
-            } else {
-                apu->ch1_volume--;
-                if (apu->ch1_volume == 0xff) apu->ch1_volume = 0x0;
+        if (apu->apu_div % 2 == 0) {
+            apu->ch1_len_counter++;
+            if (apu->ch1_len_counter == 64) {
+                apu->ch1_len_counter--;
+                if (apu->master->io[NR14] & NRX4_LEN_ENABLE)
+                    apu->ch1_enable = false;
             }
-        }
 
-        apu->ch2_vol_counter++;
-        if (apu->ch2_vol_counter == (apu->master->io[NR22] & NRX2_PACE)) {
-            apu->ch2_vol_counter = 0;
-            if (apu->master->io[NR22] & NRX2_DIR) {
-                apu->ch2_volume++;
-                if (apu->ch2_volume == 0x10) apu->ch2_volume = 0xf;
-            } else {
-                apu->ch2_volume--;
-                if (apu->ch2_volume == 0xff) apu->ch2_volume = 0x0;
+            apu->ch2_len_counter++;
+            if (apu->ch2_len_counter == 64) {
+                apu->ch2_len_counter--;
+                if (apu->master->io[NR24] & NRX4_LEN_ENABLE)
+                    apu->ch2_enable = false;
             }
+            // tick length timer
         }
-        // tick envelopes
+        if (apu->apu_div % 4 == 0) {
+            // tick ch1 sweep
+        }
+        if (apu->apu_div % 8 == 0) {
+            apu->ch1_env_counter++;
+            if (apu->ch1_env_pace &&
+                apu->ch1_env_counter % apu->ch1_env_pace == 0) {
+                if (apu->ch1_env_dir) {
+                    apu->ch1_volume++;
+                    if (apu->ch1_volume == 0x10) apu->ch1_volume = 0xf;
+                } else {
+                    apu->ch1_volume--;
+                    if (apu->ch1_volume == 0xff) apu->ch1_volume = 0x0;
+                }
+            }
+
+            apu->ch2_env_counter++;
+            if (apu->ch2_env_pace &&
+                apu->ch2_env_counter % apu->ch2_env_pace == 0) {
+                if (apu->ch2_env_dir) {
+                    apu->ch2_volume++;
+                    if (apu->ch2_volume == 0x10) apu->ch2_volume = 0xf;
+                } else {
+                    apu->ch2_volume--;
+                    if (apu->ch2_volume == 0xff) apu->ch2_volume = 0x0;
+                }
+            }
+            // tick envelopes
+        }
     }
 }
