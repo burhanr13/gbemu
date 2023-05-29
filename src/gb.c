@@ -129,8 +129,12 @@ void write8(struct gb* bus, u16 addr, u8 data) {
             case NR10:
                 break;
             case NR11:
+                bus->apu.ch1_len = data & NRX1_LEN;
+                bus->io[NR11] = data & NRX1_DUTY;
                 break;
             case NR12:
+                if (!(data & 0b11111000)) bus->apu.ch1_enable = false;
+                bus->io[NR12] = data;
                 break;
             case NR13:
                 bus->apu.ch1_wavelen = (bus->apu.ch1_wavelen & 0xff00) | data;
@@ -138,15 +142,22 @@ void write8(struct gb* bus, u16 addr, u8 data) {
             case NR14:
                 bus->apu.ch1_wavelen = (bus->apu.ch1_wavelen & 0x00ff) |
                                        ((data & NRX4_WVLEN_HI) << 8);
-                if(data & NRX4_TRIGGER) {
+                if (data & NRX4_TRIGGER) {
+                    bus->apu.ch1_enable = true;
                     bus->apu.ch1_counter = bus->apu.ch1_wavelen;
                     bus->apu.ch1_duty_index = 0;
+                    bus->apu.ch1_vol_counter = 0;
+                    bus->apu.ch1_volume = (bus->io[NR12] & NRX2_VOL) >> 4;
                 }
                 bus->io[NR14] = data & NRX4_LEN_ENABLE;
                 break;
             case NR21:
+                bus->apu.ch2_len = data & NRX1_LEN;
+                bus->io[NR21] = data & NRX1_DUTY;
                 break;
             case NR22:
+                if (!(data & 0b11111000)) bus->apu.ch2_enable = false;
+                bus->io[NR22] = data;
                 break;
             case NR23:
                 bus->apu.ch2_wavelen = (bus->apu.ch2_wavelen & 0xff00) | data;
@@ -155,8 +166,11 @@ void write8(struct gb* bus, u16 addr, u8 data) {
                 bus->apu.ch2_wavelen = (bus->apu.ch2_wavelen & 0x00ff) |
                                        ((data & NRX4_WVLEN_HI) << 8);
                 if (data & NRX4_TRIGGER) {
+                    bus->apu.ch2_enable = true;
                     bus->apu.ch2_counter = bus->apu.ch2_wavelen;
                     bus->apu.ch2_duty_index = 0;
+                    bus->apu.ch2_vol_counter = 0;
+                    bus->apu.ch2_volume = (bus->io[NR22] & NRX2_VOL) >> 4;
                 }
                 bus->io[NR24] = data & NRX4_LEN_ENABLE;
                 break;

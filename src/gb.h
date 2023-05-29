@@ -46,10 +46,10 @@ enum {
     NR12 = 0x12, // ch1 volume/envelope
     NR13 = 0x13, // ch1 wavelen low
     NR14 = 0x14, // ch1 wavelen hi/control
-    NR21 = 0x16, // ch1 length timer/duty cycle
-    NR22 = 0x17, // ch1 volume/envelope
-    NR23 = 0x18, // ch1 wavelen low
-    NR24 = 0x19, // ch1 wavelen hi/control
+    NR21 = 0x16, // ch2 length timer/duty cycle
+    NR22 = 0x17, // ch2 volume/envelope
+    NR23 = 0x18, // ch2 wavelen low
+    NR24 = 0x19, // ch2 wavelen hi/control
     // 0x40 - 0x4b : video
     LCDC = 0x40, // lcd control
     STAT = 0x41, // lcd status
