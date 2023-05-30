@@ -152,7 +152,7 @@ void write8(struct gb* bus, u16 addr, u8 data) {
             case NR14:
                 bus->apu.ch1_wavelen = (bus->apu.ch1_wavelen & 0x00ff) |
                                        ((data & NRX4_WVLEN_HI) << 8);
-                if (data & NRX4_TRIGGER) {
+                if ((bus->io[NR12] & 0b11111000) && (data & NRX4_TRIGGER)) {
                     bus->apu.ch1_enable = true;
                     bus->apu.ch1_counter = bus->apu.ch1_wavelen;
                     bus->apu.ch1_duty_index = 0;
@@ -179,7 +179,7 @@ void write8(struct gb* bus, u16 addr, u8 data) {
             case NR24:
                 bus->apu.ch2_wavelen = (bus->apu.ch2_wavelen & 0x00ff) |
                                        ((data & NRX4_WVLEN_HI) << 8);
-                if (data & NRX4_TRIGGER) {
+                if ((bus->io[NR22] & 0b11111000) && (data & NRX4_TRIGGER)) {
                     bus->apu.ch2_enable = true;
                     bus->apu.ch2_counter = bus->apu.ch2_wavelen;
                     bus->apu.ch2_duty_index = 0;
@@ -206,7 +206,7 @@ void write8(struct gb* bus, u16 addr, u8 data) {
             case NR34:
                 bus->apu.ch3_wavelen = (bus->apu.ch3_wavelen & 0x00ff) |
                                        ((data & NRX4_WVLEN_HI) << 8);
-                if (data & NRX4_TRIGGER) {
+                if ((bus->io[NR30] & 0b10000000) && (data & NRX4_TRIGGER)) {
                     bus->apu.ch3_enable = true;
                     bus->apu.ch3_counter = bus->apu.ch3_wavelen;
                     bus->apu.ch3_sample_index = 0;
@@ -224,7 +224,7 @@ void write8(struct gb* bus, u16 addr, u8 data) {
                 bus->io[NR43] = data;
                 break;
             case NR44:
-                if (data & NRX4_TRIGGER) {
+                if ((bus->io[NR42] & 0b11111000) && (data & NRX4_TRIGGER)) {
                     bus->apu.ch4_enable = true;
                     bus->apu.ch4_counter = 0;
                     bus->apu.ch4_lfsr = 0;

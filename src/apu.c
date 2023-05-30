@@ -116,8 +116,7 @@ void apu_clock(struct gb_apu* apu) {
             (float) l_sample / 500 *
             (((apu->master->io[NR50] & 0b01110000) >> 4) + 1);
         apu->sample_buf[apu->sample_ind++] =
-            (float) r_sample / 500 *
-            ((apu->master->io[NR50] & 0b00000111) + 1);
+            (float) r_sample / 500 * ((apu->master->io[NR50] & 0b00000111) + 1);
         if (apu->sample_ind == SAMPLE_BUF_LEN) {
             apu->samples_full = true;
             apu->sample_ind = 0;
@@ -128,31 +127,35 @@ void apu_clock(struct gb_apu* apu) {
         apu->apu_div++;
 
         if (apu->apu_div % 2 == 0) {
-            apu->ch1_len_counter++;
-            if (apu->ch1_len_counter == 64) {
-                apu->ch1_len_counter = 0;
-                if (apu->master->io[NR14] & NRX4_LEN_ENABLE)
+            if (apu->master->io[NR14] & NRX4_LEN_ENABLE) {
+                apu->ch1_len_counter++;
+                if (apu->ch1_len_counter == 64) {
+                    apu->ch1_len_counter = 0;
                     apu->ch1_enable = false;
+                }
             }
 
-            apu->ch2_len_counter++;
-            if (apu->ch2_len_counter == 64) {
-                apu->ch2_len_counter = 0;
-                if (apu->master->io[NR24] & NRX4_LEN_ENABLE)
+            if (apu->master->io[NR24] & NRX4_LEN_ENABLE) {
+                apu->ch2_len_counter++;
+                if (apu->ch2_len_counter == 64) {
+                    apu->ch2_len_counter = 0;
                     apu->ch2_enable = false;
+                }
             }
 
-            apu->ch3_len_counter++;
-            if (apu->ch3_len_counter == 0) {
-                if (apu->master->io[NR34] & NRX4_LEN_ENABLE)
+            if (apu->master->io[NR34] & NRX4_LEN_ENABLE) {
+                apu->ch3_len_counter++;
+                if (apu->ch3_len_counter == 0) {
                     apu->ch3_enable = false;
+                }
             }
 
-            apu->ch4_len_counter++;
-            if (apu->ch4_len_counter == 64) {
-                apu->ch4_len_counter = 0;
-                if (apu->master->io[NR44] & NRX4_LEN_ENABLE)
+            if (apu->master->io[NR44] & NRX4_LEN_ENABLE) {
+                apu->ch4_len_counter++;
+                if (apu->ch4_len_counter == 64) {
+                    apu->ch4_len_counter = 0;
                     apu->ch4_enable = false;
+                }
             }
         }
         if (apu->apu_div % 4 == 0) {
