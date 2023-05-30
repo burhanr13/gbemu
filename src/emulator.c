@@ -8,9 +8,7 @@
 #include "gb.h"
 #include "ppu.h"
 #include "sm83.h"
-
-#define FPS 59.7
-
+    
 int main(int argc, char** argv) {
     if (argc < 2) {
         printf("pass rom file name as argument\n");
