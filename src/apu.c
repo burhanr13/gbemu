@@ -45,6 +45,18 @@ u8 get_sample_ch4(struct gb_apu* apu) {
 }
 
 void apu_clock(struct gb_apu* apu) {
+    if (!(apu->master->io[NR52] & 0b10000000)) {
+        apu->master->io[NR52] = 0;
+        apu->apu_div = 0;
+        apu->sample_ind = 0;
+        return;
+    }
+
+    apu->master->io[NR52] = 0b10000000 | (apu->ch1_enable ? 0b0001 : 0) |
+                            (apu->ch2_enable ? 0b0010 : 0) |
+                            (apu->ch3_enable ? 0b0100 : 0) |
+                            (apu->ch4_enable ? 0b1000 : 0);
+
     if (apu->master->div % 2 == 0) {
         apu->ch3_counter++;
         if (apu->ch3_counter == 2048) {
@@ -91,17 +103,21 @@ void apu_clock(struct gb_apu* apu) {
         u8 ch4_sample = apu->ch4_enable ? get_sample_ch4(apu) : 0;
 
         u8 l_sample = 0, r_sample = 0;
-        l_sample += ch1_sample;
-        l_sample += ch2_sample;
-        l_sample += ch3_sample;
-        l_sample += ch4_sample;
-        r_sample += ch1_sample;
-        r_sample += ch2_sample;
-        r_sample += ch3_sample;
-        r_sample += ch4_sample;
+        if (apu->master->io[NR51] & (1 << 0)) r_sample += ch1_sample;
+        if (apu->master->io[NR51] & (1 << 1)) r_sample += ch2_sample;
+        if (apu->master->io[NR51] & (1 << 2)) r_sample += ch3_sample;
+        if (apu->master->io[NR51] & (1 << 3)) r_sample += ch4_sample;
+        if (apu->master->io[NR51] & (1 << 4)) l_sample += ch1_sample;
+        if (apu->master->io[NR51] & (1 << 5)) l_sample += ch2_sample;
+        if (apu->master->io[NR51] & (1 << 6)) l_sample += ch3_sample;
+        if (apu->master->io[NR51] & (1 << 7)) l_sample += ch4_sample;
 
-        apu->sample_buf[apu->sample_ind++] = l_sample * 2;
-        apu->sample_buf[apu->sample_ind++] = r_sample * 2;
+        apu->sample_buf[apu->sample_ind++] =
+            (float) l_sample / 500 *
+            (((apu->master->io[NR50] & 0b01110000) >> 4) + 1);
+        apu->sample_buf[apu->sample_ind++] =
+            (float) r_sample / 500 *
+            ((apu->master->io[NR50] & 0b00000111) + 1);
         if (apu->sample_ind == SAMPLE_BUF_LEN) {
             apu->samples_full = true;
             apu->sample_ind = 0;

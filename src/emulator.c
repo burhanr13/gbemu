@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
                                              GB_SCREEN_W, GB_SCREEN_H);
 
     SDL_AudioSpec audio_spec = {.freq = SAMPLE_FREQ,
-                                .format = AUDIO_U8,
+                                .format = AUDIO_F32,
                                 .channels = 2,
                                 .samples = SAMPLE_BUF_LEN / 2};
     SDL_AudioDeviceID audio_id =
@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
         while (!gb->ppu.frame_complete) {
             tick_gb(gb);
             if(gb->apu.samples_full) {
-                SDL_QueueAudio(audio_id, gb->apu.sample_buf, SAMPLE_BUF_LEN);
+                SDL_QueueAudio(audio_id, gb->apu.sample_buf, (sizeof (float)) * SAMPLE_BUF_LEN);
                 gb->apu.samples_full = false;
             }
             cycle++;
@@ -81,7 +81,7 @@ int main(int argc, char** argv) {
         SDL_RenderPresent(renderer);
         frame++;
 
-        while (SDL_GetQueuedAudioSize(audio_id) > 5 * SAMPLE_BUF_LEN) SDL_Delay(1);
+        while (SDL_GetQueuedAudioSize(audio_id) > 4 * SAMPLE_BUF_LEN) SDL_Delay(1);
         fps = 1000.0 * frame / SDL_GetTicks64();
     }
     printf("cycles: %ld, frames: %ld, fps: %lf\n", cycle, frame, fps);

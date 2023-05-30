@@ -30,7 +30,7 @@ struct gb_apu {
 
     u16 apu_div;
 
-    u8 sample_buf[SAMPLE_BUF_LEN];
+    float sample_buf[SAMPLE_BUF_LEN];
     int sample_ind;
     bool samples_full;
 

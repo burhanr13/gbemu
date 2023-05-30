@@ -235,6 +235,15 @@ void write8(struct gb* bus, u16 addr, u8 data) {
                 }
                 bus->io[NR44] = data & NRX4_LEN_ENABLE;
                 break;
+            case NR50:
+                bus->io[NR50] = data;
+                break;
+            case NR51:
+                bus->io[NR51] = data;
+                break;
+            case NR52:
+                bus->io[NR52] = data & 0b10000000;
+                break;
             case LCDC:
                 bus->io[LCDC] = data;
                 break;

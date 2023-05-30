@@ -59,6 +59,9 @@ enum {
     NR42 = 0x21, // ch4 volume/envelope
     NR43 = 0x22, // ch4 frequency/randomness
     NR44 = 0x23, // ch4 control
+    NR50 = 0x24, // master volume
+    NR51 = 0x25, // sound panning
+    NR52 = 0x26, // sound on/off
     WAVERAM = 0x30, // ch3 wave ram 0x30-0x3f
     // 0x40 - 0x4b : video
     LCDC = 0x40, // lcd control
