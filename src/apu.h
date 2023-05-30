@@ -21,6 +21,8 @@ enum {
 
 enum { NR10_SLOP = 0b00000111, NR10_DIR = 1 << 3, NR10_PACE = 0b01110000 };
 
+enum { NR43_DIV = 0b00000111, NR43_WIDTH = 1 << 3, NR43_SHIFT = 0b11110000 };
+
 struct gb;
 
 struct gb_apu {
@@ -59,6 +61,15 @@ struct gb_apu {
     u16 ch3_wavelen;
     u8 ch3_sample_index;
     u8 ch3_len_counter;
+
+    bool ch4_enable;
+    u16 ch4_counter;
+    u16 ch4_lfsr;
+    u8 ch4_env_counter;
+    u8 ch4_env_pace;
+    bool ch4_env_dir;
+    u8 ch4_volume;
+    u8 ch4_len_counter;
 };
 
 void init_apu(struct gb* master, struct gb_apu* apu);

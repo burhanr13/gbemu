@@ -110,7 +110,7 @@ void write8(struct gb* bus, u16 addr, u8 data) {
         return;
     }
     if (addr < 0xff80) {
-        if(!bus->apu.ch3_enable && (addr & 0x00f0) == WAVERAM) {
+        if (!bus->apu.ch3_enable && (addr & 0x00f0) == WAVERAM) {
             (bus->io + WAVERAM)[addr & 0x000f] = data;
             return;
         }
@@ -212,6 +212,28 @@ void write8(struct gb* bus, u16 addr, u8 data) {
                     bus->apu.ch3_sample_index = 0;
                 }
                 bus->io[NR34] = data & NRX4_LEN_ENABLE;
+                break;
+            case NR41:
+                bus->apu.ch4_len_counter = data & NRX1_LEN;
+                break;
+            case NR42:
+                if (!(data & 0b11111000)) bus->apu.ch4_enable = false;
+                bus->io[NR42] = data;
+                break;
+            case NR43:
+                bus->io[NR43] = data;
+                break;
+            case NR44:
+                if (data & NRX4_TRIGGER) {
+                    bus->apu.ch4_enable = true;
+                    bus->apu.ch4_counter = 0;
+                    bus->apu.ch4_lfsr = 0;
+                    bus->apu.ch4_env_counter = 0;
+                    bus->apu.ch4_env_pace = bus->io[NR42] & NRX2_PACE;
+                    bus->apu.ch4_env_dir = bus->io[NR42] & NRX2_DIR;
+                    bus->apu.ch4_volume = (bus->io[NR42] & NRX2_VOL) >> 4;
+                }
+                bus->io[NR24] = data & NRX4_LEN_ENABLE;
                 break;
             case LCDC:
                 bus->io[LCDC] = data;

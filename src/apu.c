@@ -40,6 +40,10 @@ u8 get_sample_ch3(struct gb_apu* apu) {
     }
 }
 
+u8 get_sample_ch4(struct gb_apu* apu) {
+    return (apu->ch4_lfsr & 1) ? apu->ch4_volume : 0;
+}
+
 void apu_clock(struct gb_apu* apu) {
     if (apu->master->div % 2 == 0) {
         apu->ch3_counter++;
@@ -62,20 +66,39 @@ void apu_clock(struct gb_apu* apu) {
             apu->ch2_duty_index++;
         }
     }
-    // same for other channels
+
+    if (apu->master->div % 8 == 0) {
+        apu->ch4_counter++;
+        u16 rate = 1 << ((apu->master->io[NR43] & NR43_SHIFT) >> 4);
+        if (apu->master->io[NR43] & NR43_DIV) {
+            rate *= 2 * apu->master->io[NR43] & NR43_DIV;
+        }
+        if (apu->ch4_counter == rate) {
+            apu->ch4_counter = 0;
+            u16 bit = ~((apu->ch4_lfsr & 0b01) ^ ((apu->ch4_lfsr & 0b10) >> 1));
+            apu->ch4_lfsr = (apu->ch4_lfsr & ~(1 << 15)) | (bit << 15);
+            if (apu->master->io[NR43] & NR43_WIDTH) {
+                apu->ch4_lfsr = (apu->ch4_lfsr & ~(1 << 7)) | (bit << 7);
+            }
+            apu->ch4_lfsr >>= 1;
+        }
+    }
 
     if (apu->master->div % SAMPLE_RATE == 0) {
         u8 ch1_sample = apu->ch1_enable ? get_sample_ch1(apu) : 0;
         u8 ch2_sample = apu->ch2_enable ? get_sample_ch2(apu) : 0;
         u8 ch3_sample = apu->ch3_enable ? get_sample_ch3(apu) : 0;
+        u8 ch4_sample = apu->ch4_enable ? get_sample_ch4(apu) : 0;
 
         u8 l_sample = 0, r_sample = 0;
         l_sample += ch1_sample;
         l_sample += ch2_sample;
         l_sample += ch3_sample;
+        l_sample += ch4_sample;
         r_sample += ch1_sample;
         r_sample += ch2_sample;
         r_sample += ch3_sample;
+        r_sample += ch4_sample;
 
         apu->sample_buf[apu->sample_ind++] = l_sample * 2;
         apu->sample_buf[apu->sample_ind++] = r_sample * 2;
@@ -109,7 +132,13 @@ void apu_clock(struct gb_apu* apu) {
                 if (apu->master->io[NR34] & NRX4_LEN_ENABLE)
                     apu->ch3_enable = false;
             }
-            // tick length timer
+
+            apu->ch4_len_counter++;
+            if (apu->ch4_len_counter == 64) {
+                apu->ch4_len_counter--;
+                if (apu->master->io[NR44] & NRX4_LEN_ENABLE)
+                    apu->ch4_enable = false;
+            }
         }
         if (apu->apu_div % 4 == 0) {
             apu->ch1_sweep_counter++;
@@ -156,7 +185,19 @@ void apu_clock(struct gb_apu* apu) {
                     if (apu->ch2_volume == 0xff) apu->ch2_volume = 0x0;
                 }
             }
-            // tick envelopes
+
+            apu->ch4_env_counter++;
+            if (apu->ch4_env_pace &&
+                apu->ch4_env_counter == apu->ch4_env_pace) {
+                apu->ch4_env_counter = 0;
+                if (apu->ch4_env_dir) {
+                    apu->ch4_volume++;
+                    if (apu->ch4_volume == 0x10) apu->ch4_volume = 0xf;
+                } else {
+                    apu->ch4_volume--;
+                    if (apu->ch4_volume == 0xff) apu->ch4_volume = 0x0;
+                }
+            }
         }
     }
 }

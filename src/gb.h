@@ -55,6 +55,10 @@ enum {
     NR32 = 0x1c, // ch3 output level
     NR33 = 0x1d, // ch3 wavelen low
     NR34 = 0x1e, // ch3 wavelen hi/control
+    NR41 = 0x20, // ch4 length timer
+    NR42 = 0x21, // ch4 volume/envelope
+    NR43 = 0x22, // ch4 frequency/randomness
+    NR44 = 0x23, // ch4 control
     WAVERAM = 0x30, // ch3 wave ram 0x30-0x3f
     // 0x40 - 0x4b : video
     LCDC = 0x40, // lcd control
