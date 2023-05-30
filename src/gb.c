@@ -49,7 +49,11 @@ u8 read8(struct gb* bus, u16 addr) {
     }
     if (addr < 0xff4d) {
         if ((addr & 0xff) == DIV) return bus->div >> 8;
-        else return bus->io[addr & 0x00ff];
+        if ((addr & 0x00f0) == WAVERAM) {
+            if (bus->apu.ch3_enable) return 0xff;
+            else return (bus->io + WAVERAM)[addr & 0x000f];
+        }
+        return bus->io[addr & 0x00ff];
     }
     if (addr < 0xff80) { // cgb registers
         return 0xff;
@@ -106,7 +110,7 @@ void write8(struct gb* bus, u16 addr, u8 data) {
         return;
     }
     if (addr < 0xff80) {
-        if((addr & 0x00f0) == WAVERAM) {
+        if(!bus->apu.ch3_enable && (addr & 0x00f0) == WAVERAM) {
             (bus->io + WAVERAM)[addr & 0x000f] = data;
             return;
         }
@@ -204,7 +208,7 @@ void write8(struct gb* bus, u16 addr, u8 data) {
                                        ((data & NRX4_WVLEN_HI) << 8);
                 if (data & NRX4_TRIGGER) {
                     bus->apu.ch3_enable = true;
-                    bus->apu.ch3_counter = bus->apu.ch2_wavelen;
+                    bus->apu.ch3_counter = bus->apu.ch3_wavelen;
                     bus->apu.ch3_sample_index = 0;
                 }
                 bus->io[NR34] = data & NRX4_LEN_ENABLE;

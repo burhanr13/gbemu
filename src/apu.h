@@ -56,7 +56,7 @@ struct gb_apu {
 
     bool ch3_enable;
     u16 ch3_counter;
-    u8 ch3_wavelen;
+    u16 ch3_wavelen;
     u8 ch3_sample_index;
     u8 ch3_len_counter;
 };
