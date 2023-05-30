@@ -114,28 +114,27 @@ void apu_clock(struct gb_apu* apu) {
         if (apu->apu_div % 2 == 0) {
             apu->ch1_len_counter++;
             if (apu->ch1_len_counter == 64) {
-                apu->ch1_len_counter--;
+                apu->ch1_len_counter = 0;
                 if (apu->master->io[NR14] & NRX4_LEN_ENABLE)
                     apu->ch1_enable = false;
             }
 
             apu->ch2_len_counter++;
             if (apu->ch2_len_counter == 64) {
-                apu->ch2_len_counter--;
+                apu->ch2_len_counter = 0;
                 if (apu->master->io[NR24] & NRX4_LEN_ENABLE)
                     apu->ch2_enable = false;
             }
 
             apu->ch3_len_counter++;
             if (apu->ch3_len_counter == 0) {
-                apu->ch3_len_counter--;
                 if (apu->master->io[NR34] & NRX4_LEN_ENABLE)
                     apu->ch3_enable = false;
             }
 
             apu->ch4_len_counter++;
             if (apu->ch4_len_counter == 64) {
-                apu->ch4_len_counter--;
+                apu->ch4_len_counter = 0;
                 if (apu->master->io[NR44] & NRX4_LEN_ENABLE)
                     apu->ch4_enable = false;
             }

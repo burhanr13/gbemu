@@ -233,7 +233,7 @@ void write8(struct gb* bus, u16 addr, u8 data) {
                     bus->apu.ch4_env_dir = bus->io[NR42] & NRX2_DIR;
                     bus->apu.ch4_volume = (bus->io[NR42] & NRX2_VOL) >> 4;
                 }
-                bus->io[NR24] = data & NRX4_LEN_ENABLE;
+                bus->io[NR44] = data & NRX4_LEN_ENABLE;
                 break;
             case LCDC:
                 bus->io[LCDC] = data;
