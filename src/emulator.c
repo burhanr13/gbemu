@@ -24,8 +24,9 @@ int main(int argc, char** argv) {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER);
     SDL_Window* window;
     SDL_Renderer* renderer;
-    SDL_CreateWindowAndRenderer(4 * GB_SCREEN_W, 4 * GB_SCREEN_H, 0, &window,
-                                &renderer);
+    SDL_CreateWindowAndRenderer(4 * GB_SCREEN_W, 4 * GB_SCREEN_H,
+                                SDL_WINDOW_RESIZABLE, &window, &renderer);
+    SDL_SetWindowTitle(window, "gbemu");
     SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888,
                                              SDL_TEXTUREACCESS_STREAMING,
                                              GB_SCREEN_W, GB_SCREEN_H);
@@ -41,7 +42,6 @@ int main(int argc, char** argv) {
     SDL_GameController* controller = NULL;
     if (SDL_NumJoysticks() > 0) {
         controller = SDL_GameControllerOpen(0);
-        printf("opened controller\n");
     }
 
     struct gb* gb = malloc(sizeof *gb);
@@ -79,7 +79,21 @@ int main(int argc, char** argv) {
         SDL_UnlockTexture(texture);
 
         SDL_RenderClear(renderer);
-        SDL_RenderCopy(renderer, texture, NULL, NULL);
+        int windowW, windowH;
+        SDL_GetWindowSize(window, &windowW, &windowH);
+        SDL_Rect dst;
+        if (windowW > windowH) {
+            dst.h = windowH;
+            dst.y = 0;
+            dst.w = dst.h * GB_SCREEN_W / GB_SCREEN_H;
+            dst.x = (windowW - dst.w) / 2;
+        } else {
+            dst.w = windowW;
+            dst.x = 0;
+            dst.h = dst.w * GB_SCREEN_H / GB_SCREEN_W;
+            dst.y = (windowH - dst.h) / 2;
+        }
+        SDL_RenderCopy(renderer, texture, NULL, &dst);
         SDL_RenderPresent(renderer);
         frame++;
 
