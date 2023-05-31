@@ -24,8 +24,8 @@ int main(int argc, char** argv) {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER);
     SDL_Window* window;
     SDL_Renderer* renderer;
-    SDL_CreateWindowAndRenderer(4 * GB_SCREEN_W, 4 * GB_SCREEN_H,
-                                SDL_WINDOW_RESIZABLE, &window, &renderer);
+    SDL_CreateWindowAndRenderer(1200, 700, SDL_WINDOW_RESIZABLE, &window,
+                                &renderer);
     SDL_SetWindowTitle(window, "gbemu");
     SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888,
                                              SDL_TEXTUREACCESS_STREAMING,
@@ -97,8 +97,12 @@ int main(int argc, char** argv) {
         SDL_RenderPresent(renderer);
         frame++;
 
-        while (SDL_GetQueuedAudioSize(audio_id) > 4 * SAMPLE_BUF_LEN)
-            SDL_Delay(1);
+        if (gb->io[NR52]) {
+            while (SDL_GetQueuedAudioSize(audio_id) > 4 * SAMPLE_BUF_LEN)
+                SDL_Delay(1);
+        } else {
+            SDL_Delay(16);
+        }
         fps = 1000.0 * frame / SDL_GetTicks64();
     }
     printf("cycles: %ld, frames: %ld, fps: %lf\n", cycle, frame, fps);

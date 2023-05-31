@@ -121,6 +121,7 @@ void ppu_clock(struct gb_ppu* ppu) {
                 load_bg_tile(ppu);
             }
 
+            int bg_index = 0;
             int color = 0;
             if (ppu->master->io[LCDC] & LCDC_BG_ENABLE) {
                 if ((ppu->master->io[LCDC] & LCDC_WINDOW_ENABLE) &&
@@ -134,7 +135,6 @@ void ppu_clock(struct gb_ppu* ppu) {
                     load_bg_tile(ppu);
                 }
 
-                int bg_index = 0;
                 if (ppu->bg_tile_b0 & 0x80) bg_index |= 0b01;
                 if (ppu->bg_tile_b1 & 0x80) bg_index |= 0b10;
                 color = (ppu->master->io[BGP] >> (2 * bg_index)) & 0b11;
@@ -147,7 +147,7 @@ void ppu_clock(struct gb_ppu* ppu) {
                 if (ppu->obj_tile_b0 & 0x80) obj_index |= 0b01;
                 if (ppu->obj_tile_b1 & 0x80) obj_index |= 0b10;
 
-                if ((color == 0 || !(ppu->obj_tile_bgover & 0x80)) &&
+                if ((bg_index == 0 || !(ppu->obj_tile_bgover & 0x80)) &&
                     obj_index) {
                     if (ppu->obj_tile_pal & 0x80) {
                         color =
