@@ -25,14 +25,14 @@ This project uses SDL2 as a dependency and that library is needed to compile and
 
 ## How to use
 Run the executable with the ROM file path as the only command line argument. You can use the keyboard or connect a game controller prior to running the emulator.
-<p>
+
 Keyboard Controls:
 - A : Z
 - B : X
 - Start : Return
 - Select : Backspace
 - Dpad : arrow keys
-<p>
+
 Gamepad Controls:
 - A : A
 - B : X
