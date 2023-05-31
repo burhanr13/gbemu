@@ -8,7 +8,7 @@
 #include "gb.h"
 #include "ppu.h"
 #include "sm83.h"
-    
+
 int main(int argc, char** argv) {
     if (argc < 2) {
         printf("pass rom file name as argument\n");
@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER);
     SDL_Window* window;
     SDL_Renderer* renderer;
     SDL_CreateWindowAndRenderer(4 * GB_SCREEN_W, 4 * GB_SCREEN_H, 0, &window,
@@ -38,11 +38,14 @@ int main(int argc, char** argv) {
         SDL_OpenAudioDevice(NULL, 0, &audio_spec, NULL, 0);
     SDL_PauseAudioDevice(audio_id, 0);
 
-    struct gb* gb = calloc(1, sizeof(*gb));
-    gb->cart = cart;
-    init_cpu(gb, &gb->cpu);
-    init_ppu(gb, &gb->ppu);
-    init_apu(gb, &gb->apu);
+    SDL_GameController* controller = NULL;
+    if (SDL_NumJoysticks() > 0) {
+        controller = SDL_GameControllerOpen(0);
+        printf("opened controller\n");
+    }
+
+    struct gb* gb = malloc(sizeof *gb);
+    reset_gb(gb, cart);
 
     long cycle = 0;
     long frame = 0;
@@ -65,8 +68,9 @@ int main(int argc, char** argv) {
                         &gb->ppu.pitch);
         while (!gb->ppu.frame_complete) {
             tick_gb(gb);
-            if(gb->apu.samples_full) {
-                SDL_QueueAudio(audio_id, gb->apu.sample_buf, (sizeof (float)) * SAMPLE_BUF_LEN);
+            if (gb->apu.samples_full) {
+                SDL_QueueAudio(audio_id, gb->apu.sample_buf,
+                               (sizeof(float)) * SAMPLE_BUF_LEN);
                 gb->apu.samples_full = false;
             }
             cycle++;
@@ -79,13 +83,16 @@ int main(int argc, char** argv) {
         SDL_RenderPresent(renderer);
         frame++;
 
-        while (SDL_GetQueuedAudioSize(audio_id) > 4 * SAMPLE_BUF_LEN) SDL_Delay(1);
+        while (SDL_GetQueuedAudioSize(audio_id) > 4 * SAMPLE_BUF_LEN)
+            SDL_Delay(1);
         fps = 1000.0 * frame / SDL_GetTicks64();
     }
     printf("cycles: %ld, frames: %ld, fps: %lf\n", cycle, frame, fps);
 
     free(gb);
     cart_destroy(cart);
+
+    SDL_GameControllerClose(controller);
 
     SDL_CloseAudioDevice(audio_id);
 

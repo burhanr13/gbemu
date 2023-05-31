@@ -72,8 +72,6 @@ struct gb_ppu {
     bool frame_complete;
 };
 
-void init_ppu(struct gb* master, struct gb_ppu* ppu);
-
 void ppu_clock(struct gb_ppu* ppu);
 
 #endif

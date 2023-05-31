@@ -6,18 +6,6 @@
 
 #include "gb.h"
 
-void init_cpu(struct gb* master, struct sm83* cpu) {
-    memset(cpu, 0, sizeof(*cpu));
-    cpu->master = master;
-    cpu->AF = 0x01b0;
-    cpu->BC = 0x0013;
-    cpu->DE = 0x00d8;
-    cpu->HL = 0x014d;
-    cpu->SP = 0xfffe;
-    cpu->PC = 0x0100;
-    cpu->master->io[LCDC] |= LCDC_ENABLE;
-}
-
 static inline void set_flag(struct sm83* cpu, int flag, int val) {
     if (val) {
         cpu->F |= flag;

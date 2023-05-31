@@ -388,6 +388,20 @@ void run_dma(struct gb* gb) {
     gb->dma_cycles--;
 }
 
+void reset_gb(struct gb* gb, struct cartridge* cart) {
+    memset(gb, 0x00, sizeof *gb);
+    gb->cpu.master = gb;
+    gb->ppu.master = gb;
+    gb->apu.master = gb;
+
+    gb->cart = cart;
+
+    gb->cpu.A = 0x01;
+    gb->cpu.PC = 0x0100;
+
+    gb->io[LCDC] |= LCDC_ENABLE;
+}
+
 void gb_handle_event(struct gb* gb, SDL_Event* e) {
     if (e->type == SDL_KEYDOWN) {
         switch (e->key.keysym.scancode) {
@@ -443,6 +457,66 @@ void gb_handle_event(struct gb* gb, SDL_Event* e) {
                 gb->jp_action &= ~JP_U_SL;
                 break;
             case SDL_SCANCODE_RETURN:
+                gb->jp_action &= ~JP_D_ST;
+                break;
+            default:
+                break;
+        }
+    }
+    if (e->type == SDL_CONTROLLERBUTTONDOWN) {
+        switch (e->cbutton.button) {
+            case SDL_CONTROLLER_BUTTON_DPAD_UP:
+                gb->jp_dir |= JP_U_SL;
+                break;
+            case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+                gb->jp_dir |= JP_D_ST;
+                break;
+            case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+                gb->jp_dir |= JP_L_B;
+                break;
+            case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+                gb->jp_dir |= JP_R_A;
+                break;
+            case SDL_CONTROLLER_BUTTON_A:
+                gb->jp_action |= JP_R_A;
+                break;
+            case SDL_CONTROLLER_BUTTON_X:
+                gb->jp_action |= JP_L_B;
+                break;
+            case SDL_CONTROLLER_BUTTON_BACK:
+                gb->jp_action |= JP_U_SL;
+                break;
+            case SDL_CONTROLLER_BUTTON_START:
+                gb->jp_action |= JP_D_ST;
+                break;
+            default:
+                break;
+        }
+    }
+    if (e->type == SDL_CONTROLLERBUTTONUP) {
+        switch (e->cbutton.button) {
+            case SDL_CONTROLLER_BUTTON_DPAD_UP:
+                gb->jp_dir &= ~JP_U_SL;
+                break;
+            case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+                gb->jp_dir &= ~JP_D_ST;
+                break;
+            case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+                gb->jp_dir &= ~JP_L_B;
+                break;
+            case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+                gb->jp_dir &= ~JP_R_A;
+                break;
+            case SDL_CONTROLLER_BUTTON_A:
+                gb->jp_action &= ~JP_R_A;
+                break;
+            case SDL_CONTROLLER_BUTTON_X:
+                gb->jp_action &= ~JP_L_B;
+                break;
+            case SDL_CONTROLLER_BUTTON_BACK:
+                gb->jp_action &= ~JP_U_SL;
+                break;
+            case SDL_CONTROLLER_BUTTON_START:
                 gb->jp_action &= ~JP_D_ST;
                 break;
             default:

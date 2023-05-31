@@ -6,12 +6,6 @@
 
 Uint32 colors[] = {0x00ffffff, 0x0000e000, 0x0009000, 0x00000000};
 
-void init_ppu(struct gb* master, struct gb_ppu* ppu) {
-    ppu->master = master;
-    ppu->cycle = 0;
-    ppu->scanline = 0;
-}
-
 static void load_bg_tile(struct gb_ppu* ppu) {
     u16 tilemap_offset = TILEMAP_SIZE * ppu->tileY + ppu->tileX;
     u16 tilemap_start;

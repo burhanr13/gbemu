@@ -126,4 +126,6 @@ void run_dma(struct gb* gb);
 
 void tick_gb(struct gb* gb);
 
+void reset_gb(struct gb* gb, struct cartridge* cart);
+
 #endif

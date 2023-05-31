@@ -4,11 +4,6 @@
 
 u8 duty_cycles[] = {0b11111110, 0b01111110, 0b01111000, 0b10000001};
 
-void init_apu(struct gb* master, struct gb_apu* apu) {
-    apu->master = master;
-    apu->apu_div = 0;
-}
-
 u8 get_sample_ch1(struct gb_apu* apu) {
     return (duty_cycles[(apu->master->io[NR11] & NRX1_DUTY) >> 6] &
             (1 << (apu->ch1_duty_index & 7)))

@@ -72,7 +72,6 @@ struct gb_apu {
     u8 ch4_len_counter;
 };
 
-void init_apu(struct gb* master, struct gb_apu* apu);
 void apu_clock(struct gb_apu* apu);
 
 #endif
