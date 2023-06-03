@@ -396,7 +396,11 @@ void reset_gb(struct gb* gb, struct cartridge* cart) {
 
     gb->cart = cart;
 
-    gb->cpu.A = 0x01;
+    gb->cpu.AF = 0x01b0;
+    gb->cpu.BC = 0x0013;
+    gb->cpu.DE = 0x00d8;
+    gb->cpu.HL = 0x014d;
+    gb->cpu.SP = 0xfffe;
     gb->cpu.PC = 0x0100;
 
     gb->io[LCDC] |= LCDC_ENABLE;
