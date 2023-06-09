@@ -14,11 +14,11 @@ An emulator for the Game Boy, a handheld game console from the 1990s. Currently 
 
 ### Todo:
 - other mappers and RTC
-- timing/accuracy
 - game boy color support
 - configuration and emulator controls
 - save states
 - fast forward
+- cycle accuracy
 
 ## Compilation
 This project uses SDL2 as a dependency and that library is needed to compile and link the executable. The Makefile can be used to compile the project.
@@ -39,3 +39,7 @@ Gamepad Controls:
 - Start : Start
 - Select : Back
 - Dpad : Dpad
+
+Hotkeys:
+- Reset : R
+- Pause : P

@@ -1,121 +1,114 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include "emulator.h"
 
 #include <SDL2/SDL.h>
 
-#include "apu.h"
-#include "cartridge.h"
 #include "gb.h"
-#include "ppu.h"
-#include "sm83.h"
 
-int main(int argc, char** argv) {
-    if (argc < 2) {
-        printf("pass rom file name as argument\n");
-        return -1;
+struct emulator gbemu;
+
+bool emulator_init() {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER) <
+        0) {
+        return false;
     }
 
-    struct cartridge* cart = cart_create(argv[1]);
-    if (!cart) {
-        printf("error loading rom\n");
-        return -1;
+    if (SDL_CreateWindowAndRenderer(1200, 700, SDL_WINDOW_RESIZABLE,
+                                    &gbemu.main_window,
+                                    &gbemu.main_renderer) < 0) {
+        return false;
     }
+    SDL_SetWindowTitle(gbemu.main_window, "gbemu");
+    SDL_RenderPresent(gbemu.main_renderer);
 
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER);
-    SDL_Window* window;
-    SDL_Renderer* renderer;
-    SDL_CreateWindowAndRenderer(1200, 700, SDL_WINDOW_RESIZABLE, &window,
-                                &renderer);
-    SDL_SetWindowTitle(window, "gbemu");
-    SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888,
-                                             SDL_TEXTUREACCESS_STREAMING,
-                                             GB_SCREEN_W, GB_SCREEN_H);
+    gbemu.gb_screen = SDL_CreateTexture(
+        gbemu.main_renderer, SDL_PIXELFORMAT_ARGB8888,
+        SDL_TEXTUREACCESS_STREAMING, GB_SCREEN_W, GB_SCREEN_H);
 
     SDL_AudioSpec audio_spec = {.freq = SAMPLE_FREQ,
                                 .format = AUDIO_F32,
                                 .channels = 2,
                                 .samples = SAMPLE_BUF_LEN / 2};
-    SDL_AudioDeviceID audio_id =
-        SDL_OpenAudioDevice(NULL, 0, &audio_spec, NULL, 0);
-    SDL_PauseAudioDevice(audio_id, 0);
+    gbemu.gb_audio = SDL_OpenAudioDevice(NULL, 0, &audio_spec, NULL, 0);
+    if (gbemu.gb_audio == 0) {
+        return false;
+    }
+    SDL_PauseAudioDevice(gbemu.gb_audio, 0);
 
-    SDL_GameController* controller = NULL;
     if (SDL_NumJoysticks() > 0) {
-        controller = SDL_GameControllerOpen(0);
+        gbemu.controller = SDL_GameControllerOpen(0);
     }
 
-    struct gb* gb = malloc(sizeof *gb);
-    reset_gb(gb, cart);
+    gbemu.gb = malloc(sizeof *gbemu.gb);
 
-    long cycle = 0;
-    long frame = 0;
-    double fps = 0.0;
+    gbemu.paused = true;
 
-    bool running = true;
-    while (running) {
-        if (gb->cpu.ill) {
-            printf("illegal instruction reached -- terminating\n");
-            break;
-        }
+    return true;
+}
 
-        SDL_Event e;
-        while (SDL_PollEvent(&e)) {
-            if (e.type == SDL_QUIT) running = false;
-            gb_handle_event(gb, &e);
-        }
+void emulator_quit() {
+    free(gbemu.gb);
+    cart_destroy(gbemu.cart);
 
-        SDL_LockTexture(texture, NULL, (void**) &gb->ppu.screen,
-                        &gb->ppu.pitch);
-        while (!gb->ppu.frame_complete) {
-            tick_gb(gb);
-            if (gb->apu.samples_full) {
-                SDL_QueueAudio(audio_id, gb->apu.sample_buf,
-                               (sizeof(float)) * SAMPLE_BUF_LEN);
-                gb->apu.samples_full = false;
-            }
-            cycle++;
-        }
-        gb->ppu.frame_complete = false;
-        SDL_UnlockTexture(texture);
+    SDL_GameControllerClose(gbemu.controller);
 
-        SDL_RenderClear(renderer);
-        int windowW, windowH;
-        SDL_GetWindowSize(window, &windowW, &windowH);
-        SDL_Rect dst;
-        if (windowW > windowH) {
-            dst.h = windowH;
-            dst.y = 0;
-            dst.w = dst.h * GB_SCREEN_W / GB_SCREEN_H;
-            dst.x = (windowW - dst.w) / 2;
-        } else {
-            dst.w = windowW;
-            dst.x = 0;
-            dst.h = dst.w * GB_SCREEN_H / GB_SCREEN_W;
-            dst.y = (windowH - dst.h) / 2;
-        }
-        SDL_RenderCopy(renderer, texture, NULL, &dst);
-        SDL_RenderPresent(renderer);
-        frame++;
+    SDL_CloseAudioDevice(gbemu.gb_audio);
 
-        if (gb->io[NR52]) {
-            while (SDL_GetQueuedAudioSize(audio_id) > 4 * SAMPLE_BUF_LEN)
-                SDL_Delay(1);
-        } else {
-            SDL_Delay(16);
-        }
-        fps = 1000.0 * frame / SDL_GetTicks64();
-    }
-    printf("cycles: %ld, frames: %ld, fps: %lf\n", cycle, frame, fps);
-
-    free(gb);
-    cart_destroy(cart);
-
-    SDL_GameControllerClose(controller);
-
-    SDL_CloseAudioDevice(audio_id);
-
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
+    SDL_DestroyRenderer(gbemu.main_renderer);
+    SDL_DestroyWindow(gbemu.main_window);
     SDL_Quit();
-    return 0;
+}
+
+void emu_handle_event(SDL_Event e) {
+    gb_handle_event(gbemu.gb, &e);
+
+    if (e.type == SDL_KEYDOWN) {
+        switch (e.key.keysym.sym) {
+            case SDLK_r:
+                emu_reset();
+                break;
+            case SDLK_p:
+                gbemu.paused = !gbemu.paused;
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+void emu_run_frame(bool audio) {
+    SDL_LockTexture(gbemu.gb_screen, NULL, (void**) &gbemu.gb->ppu.screen,
+                    &gbemu.gb->ppu.pitch);
+    while (!gbemu.gb->ppu.frame_complete) {
+        tick_gb(gbemu.gb);
+        if (gbemu.gb->apu.samples_full) {
+            if (audio)
+                SDL_QueueAudio(gbemu.gb_audio, gbemu.gb->apu.sample_buf,
+                               sizeof gbemu.gb->apu.sample_buf);
+            gbemu.gb->apu.samples_full = false;
+        }
+        gbemu.cycle++;
+    }
+    gbemu.gb->ppu.frame_complete = false;
+    SDL_UnlockTexture(gbemu.gb_screen);
+    gbemu.frame++;
+}
+
+bool emu_load_rom(char* filename) {
+    gbemu.cart = cart_create(filename);
+    if (!gbemu.cart) {
+        SDL_ShowSimpleMessageBox(
+            SDL_MESSAGEBOX_ERROR, "gbemu",
+            "Error loading rom! File does not exist or is invalid format.",
+            gbemu.main_window);
+        return false;
+    }
+    emu_reset();
+    return true;
+}
+
+void emu_reset() {
+    reset_gb(gbemu.gb, gbemu.cart);
+    gbemu.cycle = 0;
+    gbemu.frame = 0;
+    gbemu.paused = false;
 }
