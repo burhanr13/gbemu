@@ -601,7 +601,8 @@ void cpu_clock(struct sm83* cpu) {
             cpu->IME = false;
             int i;
             for (i = 0; i < 5; i++) {
-                if (cpu->master->io[IF] & (1 << i)) break;
+                if ((cpu->master->IE & cpu->master->io[IF]) & (1 << i))
+                    break;
             }
             cpu->master->io[IF] &= ~(1 << i);
             push(cpu, cpu->PC);
