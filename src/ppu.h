@@ -51,10 +51,10 @@ struct gb_ppu {
     u8 bg_tile_b0;
     u8 bg_tile_b1;
 
-    int tileX;
-    int tileY;
-    int fineX;
-    int fineY;
+    u8 tileX;
+    u8 tileY;
+    u8 fineX;
+    u8 fineY;
     int screenX;
     bool rendering_window;
     int windowline;

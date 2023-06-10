@@ -63,7 +63,7 @@ struct gb_apu {
     u8 ch3_len_counter;
 
     bool ch4_enable;
-    u16 ch4_counter;
+    int ch4_counter;
     u16 ch4_lfsr;
     u8 ch4_env_counter;
     u8 ch4_env_pace;

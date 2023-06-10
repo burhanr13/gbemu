@@ -7,13 +7,18 @@
 Uint32 colors[] = {0x00ffffff, 0x0000e000, 0x0009000, 0x00000000};
 
 static void load_bg_tile(struct gb_ppu* ppu) {
-    u16 tilemap_offset = TILEMAP_SIZE * ppu->tileY + ppu->tileX;
+    u16 tilemap_offset;
     u16 tilemap_start;
     if ((ppu->master->io[LCDC] & LCDC_WINDOW_ENABLE) && ppu->rendering_window &&
         ppu->screenX >= (ppu->master->io[WX] - 7)) {
+        tilemap_offset =
+            TILEMAP_SIZE * ppu->tileY + ((ppu->tileX) & (TILEMAP_SIZE - 1));
         tilemap_start =
             (ppu->master->io[LCDC] & LCDC_WINDOW_TILE_AREA) ? 0x1c00 : 0x1800;
     } else {
+        tilemap_offset =
+            TILEMAP_SIZE * ppu->tileY +
+            ((ppu->tileX + (ppu->master->io[SCX] >> 3)) & (TILEMAP_SIZE - 1));
         tilemap_start =
             (ppu->master->io[LCDC] & LCDC_BG_MAP_AREA) ? 0x1c00 : 0x1800;
     }
@@ -83,7 +88,7 @@ void ppu_clock(struct gb_ppu* ppu) {
                     ppu->rendering_window = true;
                 }
 
-                ppu->screenX = -7;
+                ppu->screenX = -8;
                 ppu->obj_ct = 0;
             }
 
@@ -98,16 +103,15 @@ void ppu_clock(struct gb_ppu* ppu) {
                 }
             }
         } else if (ppu->screenX < GB_SCREEN_W) {
-            if (ppu->screenX == -7) {
+            if (ppu->screenX == -8) {
                 ppu->master->io[STAT] &= ~STAT_MODE;
                 ppu->master->io[STAT] |= 3;
 
                 u8 curY = ppu->master->io[SCY] + ppu->scanline;
                 ppu->tileY = (curY >> 3) & (TILEMAP_SIZE - 1);
                 ppu->fineY = curY & 0b111;
-                ppu->tileX =
-                    ((ppu->master->io[SCX] - 7) >> 3) & (TILEMAP_SIZE - 1);
-                ppu->fineX = (ppu->master->io[SCX] - 7) & 0b111;
+                ppu->tileX = 0xff;
+                ppu->fineX = ppu->master->io[SCX] & 0b111;
 
                 load_bg_tile(ppu);
                 ppu->bg_tile_b0 <<= ppu->fineX;
@@ -168,7 +172,7 @@ void ppu_clock(struct gb_ppu* ppu) {
             ppu->bg_tile_b1 <<= 1;
             ppu->fineX++;
             if (ppu->fineX == 8) {
-                ppu->tileX = (ppu->tileX + 1) & (TILEMAP_SIZE - 1);
+                ppu->tileX++;
                 ppu->fineX = 0;
             }
             ppu->screenX++;
