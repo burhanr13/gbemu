@@ -21,6 +21,7 @@ An emulator for the Game Boy, a handheld game console from the 1990s. Currently 
 - save states
 - fast forward
 - cycle accuracy
+- serial communication
 
 ## Compilation
 This project uses SDL2 as a dependency and that library is needed to compile and link the executable. The Makefile can be used to compile the project.

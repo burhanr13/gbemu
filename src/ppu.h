@@ -42,6 +42,8 @@ enum {
 };
 
 enum {
+    OBJ_CPAL = 0b111,
+    OBJ_BANK =  1 << 3,
     OBJ_PAL = (1 << 4),
     OBJ_XFLIP = (1 << 5),
     OBJ_YFLIP = (1 << 6),
@@ -58,8 +60,12 @@ struct gb_ppu {
 
     u8 bg_tile_b0;
     u8 bg_tile_b1;
-    
+
     u8 bg_tile_bgover;
+
+    u8 bg_tile_cpal_b0;
+    u8 bg_tile_cpal_b1;
+    u8 bg_tile_cpal_b2;
 
     u8 tileX;
     u8 tileY;
@@ -73,6 +79,13 @@ struct gb_ppu {
     u8 obj_tile_b1;
     u8 obj_tile_pal;
     u8 obj_tile_bgover;
+
+    u8 obj_tile_cpal_b0;
+    u8 obj_tile_cpal_b1;
+    u8 obj_tile_cpal_b2;
+
+    u8 obj_oam_inds[8];
+    u8 obj_oam_head;
 
     u8 objs[10];
     u8 obj_ct;

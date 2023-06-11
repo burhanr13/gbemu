@@ -54,7 +54,7 @@ u8 read8(struct gb* bus, u16 addr) {
         return 0xff;
     }
     if (addr < 0xff4d) {
-        if ((addr & 0xff) == DIV) return bus->div >> 8;
+        if ((addr & 0x00ff) == DIV) return bus->div >> 8;
         if ((addr & 0x00f0) == WAVERAM) {
             if (bus->apu.ch3_enable) return 0xff;
             else return (bus->io + WAVERAM)[addr & 0x000f];
@@ -63,6 +63,18 @@ u8 read8(struct gb* bus, u16 addr) {
     }
     if (addr < 0xff80) { // cgb registers
         if (bus->cgb_mode) {
+            if ((addr & 0x00ff) == BCPD) {
+                if (!(bus->io[LCDC] & LCDC_ENABLE) ||
+                    (bus->io[STAT] & STAT_MODE) != 3) {
+                    return bus->bg_cram[bus->io[BCPS] & CPS_ADDR];
+                } else return 0xff;
+            }
+            if ((addr & 0x00ff) == OCPD) {
+                if (!(bus->io[LCDC] & LCDC_ENABLE) ||
+                    (bus->io[STAT] & STAT_MODE) != 3) {
+                    return bus->obj_cram[bus->io[OCPS] & CPS_ADDR];
+                } else return 0xff;
+            }
             return bus->io[addr & 0x00ff];
         } else return 0xff;
     }
@@ -300,6 +312,34 @@ void write8(struct gb* bus, u16 addr, u8 data) {
                         case VBK:
                             bus->io[VBK] = ~1 | (data & 1);
                             break;
+                        case BCPS:
+                            bus->io[BCPS] = data;
+                            break;
+                        case BCPD:
+                            if (!(bus->io[LCDC] & LCDC_ENABLE) ||
+                                (bus->io[STAT] & STAT_MODE) != 3) {
+                                bus->bg_cram[bus->io[BCPS] & CPS_ADDR] = data;
+                            }
+                            if (bus->io[BCPS] & CPS_INC) {
+                                bus->io[BCPS]++;
+                                bus->io[BCPS] &= ~(1 << 6);
+                            }
+                            break;
+                        case OCPS:
+                            bus->io[OCPS] = data;
+                            break;
+                        case OCPD:
+                            if (!(bus->io[LCDC] & LCDC_ENABLE) ||
+                                (bus->io[STAT] & STAT_MODE) != 3) {
+                                bus->obj_cram[bus->io[OCPS] & CPS_ADDR] = data;
+                            }
+                            if (bus->io[OCPS] & CPS_INC) {
+                                bus->io[OCPS]++;
+                                bus->io[OCPS] &= ~(1 << 6);
+                            }
+                            break;
+                        case OPRI:
+                            bus->io[OPRI] = data & 1;
                         case SVBK:
                             bus->io[SVBK] = data & 0b111;
                             break;
@@ -426,6 +466,7 @@ void reset_gb(struct gb* gb, struct cartridge* cart) {
         gb->cgb_mode = true;
     } else {
         gb->cpu.A = 0x01;
+        gb->io[OPRI] = 1;
     }
 
     gb->cpu.SP = 0xfffe;
