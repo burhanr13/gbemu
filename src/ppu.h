@@ -34,6 +34,14 @@ enum {
 };
 
 enum {
+    BG_CPAL = 0b111,
+    BG_BANK = 1 << 3,
+    BG_XFLIP = 1 << 5,
+    BG_YFLIP = 1 << 6,
+    BG_BGOVER = 1 << 7
+};
+
+enum {
     OBJ_PAL = (1 << 4),
     OBJ_XFLIP = (1 << 5),
     OBJ_YFLIP = (1 << 6),
@@ -50,6 +58,8 @@ struct gb_ppu {
 
     u8 bg_tile_b0;
     u8 bg_tile_b1;
+    
+    u8 bg_tile_bgover;
 
     u8 tileX;
     u8 tileY;

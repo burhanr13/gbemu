@@ -6,6 +6,7 @@
 #include <stdlib.h>
 
 #include "cartridge.h"
+#include "emulator.h"
 
 u8 read8(struct gb* bus, u16 addr) {
     bus->cpu.cycles += 4;
@@ -20,7 +21,7 @@ u8 read8(struct gb* bus, u16 addr) {
     if (addr < 0xa000) {
         if (!(bus->io[LCDC] & LCDC_ENABLE) ||
             (bus->io[STAT] & STAT_MODE) != 3) {
-            return bus->vram[0][addr & 0x1fff];
+            return bus->vram[bus->io[VBK] & 1][addr & 0x1fff];
         } else {
             return 0xff;
         }
@@ -32,10 +33,15 @@ u8 read8(struct gb* bus, u16 addr) {
         return bus->wram[0][addr & 0x0fff];
     }
     if (addr < 0xe000) {
-        return bus->wram[1][addr & 0x0fff];
+        u8 bank = bus->io[SVBK];
+        return bus->wram[bank ? bank : 1][addr & 0x0fff];
+    }
+    if (addr < 0xf000) {
+        return bus->wram[0][addr & 0x0fff];
     }
     if (addr < 0xfe00) {
-        return bus->wram[0][addr & 0x0fff];
+        u8 bank = bus->io[SVBK];
+        return bus->wram[bank ? bank : 1][addr & 0x0fff];
     }
     if (addr < 0xfea0) {
         if (!(bus->io[LCDC] & LCDC_ENABLE) || (bus->io[STAT] & STAT_MODE) < 2) {
@@ -56,7 +62,9 @@ u8 read8(struct gb* bus, u16 addr) {
         return bus->io[addr & 0x00ff];
     }
     if (addr < 0xff80) { // cgb registers
-        return 0xff;
+        if (bus->cgb_mode) {
+            return bus->io[addr & 0x00ff];
+        } else return 0xff;
     }
     if (addr < 0xffff) {
         return bus->hram[addr - 0xff80];
@@ -80,7 +88,7 @@ void write8(struct gb* bus, u16 addr, u8 data) {
     if (addr < 0xa000) {
         if (!(bus->io[LCDC] & LCDC_ENABLE) ||
             (bus->io[STAT] & STAT_MODE) != 3) {
-            bus->vram[0][addr & 0x1fff] = data;
+            bus->vram[bus->io[VBK] & 1][addr & 0x1fff] = data;
         }
         return;
     }
@@ -93,11 +101,17 @@ void write8(struct gb* bus, u16 addr, u8 data) {
         return;
     }
     if (addr < 0xe000) {
-        bus->wram[1][addr & 0x0fff] = data;
+        u8 bank = bus->io[SVBK];
+        bus->wram[bank ? bank : 1][addr & 0x0fff] = data;
+        return;
+    }
+    if (addr < 0xf000) {
+        bus->wram[0][addr & 0x0fff] = data;
         return;
     }
     if (addr < 0xfe00) {
-        bus->wram[0][addr & 0x0fff] = data;
+        u8 bank = bus->io[SVBK];
+        bus->wram[bank ? bank : 1][addr & 0x0fff] = data;
         return;
     }
     if (addr < 0xfea0) {
@@ -280,6 +294,18 @@ void write8(struct gb* bus, u16 addr, u8 data) {
             case WX:
                 bus->io[WX] = data;
                 break;
+            default:
+                if (bus->cgb_mode) {
+                    switch (addr & 0x00ff) {
+                        case VBK:
+                            bus->io[VBK] = ~1 | (data & 1);
+                            break;
+                        case SVBK:
+                            bus->io[SVBK] = data & 0b111;
+                            break;
+                    }
+                }
+                break;
         }
         return;
     }
@@ -395,8 +421,13 @@ void reset_gb(struct gb* gb, struct cartridge* cart) {
     gb->apu.master = gb;
 
     gb->cart = cart;
+    if (gb->cart && gb->cart->cgb_compat && !gbemu.force_dmg) {
+        gb->cpu.A = 0x11;
+        gb->cgb_mode = true;
+    } else {
+        gb->cpu.A = 0x01;
+    }
 
-    gb->cpu.A = 0x01;
     gb->cpu.SP = 0xfffe;
     gb->cpu.PC = 0x0100;
 

@@ -22,6 +22,8 @@ struct cartridge {
     bool battery;
     int sav_fd;
 
+    bool cgb_compat;
+
     union {
         struct {
             u8 ram_enable;

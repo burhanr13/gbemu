@@ -12,9 +12,11 @@ An emulator for the Game Boy, a handheld game console from the 1990s. Currently 
 - audio
 - controller support
 
+### In Progress:
+- game boy color support
+
 ### Todo:
 - other mappers and RTC
-- game boy color support
 - configuration and emulator controls
 - save states
 - fast forward
@@ -42,4 +44,5 @@ Gamepad Controls:
 
 Hotkeys:
 - Reset : R
+- Reset and switch between gb/gbc : T
 - Pause : P

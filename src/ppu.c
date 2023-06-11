@@ -2,9 +2,15 @@
 
 #include <SDL2/SDL.h>
 
+#include "emulator.h"
 #include "gb.h"
 
-Uint32 colors[] = {0x00ffffff, 0x0000e000, 0x0009000, 0x00000000};
+static u8 reverse_byte(u8 b) {
+    b = (b & 0xf0) >> 4 | (b & 0x0f) << 4;
+    b = (b & 0xcc) >> 2 | (b & 0x33) << 2;
+    b = (b & 0xaa) >> 1 | (b & 0x55) << 1;
+    return b;
+}
 
 static void load_bg_tile(struct gb_ppu* ppu) {
     u16 tilemap_offset;
@@ -23,21 +29,23 @@ static void load_bg_tile(struct gb_ppu* ppu) {
             (ppu->master->io[LCDC] & LCDC_BG_MAP_AREA) ? 0x1c00 : 0x1800;
     }
     u8 tile_index = ppu->master->vram[0][tilemap_start + tilemap_offset];
+    u8 tile_attr = ppu->master->vram[1][tilemap_start + tilemap_offset];
     u16 tile_addr;
     if (ppu->master->io[LCDC] & LCDC_BG_TILE_AREA) {
         tile_addr = tile_index << 4;
     } else {
         tile_addr = 0x1000 + ((s8) tile_index << 4);
     }
-    ppu->bg_tile_b0 = ppu->master->vram[0][tile_addr + 2 * ppu->fineY];
-    ppu->bg_tile_b1 = ppu->master->vram[0][tile_addr + 2 * ppu->fineY + 1];
-}
-
-static u8 reverse_byte(u8 b) {
-    b = (b & 0xf0) >> 4 | (b & 0x0f) << 4;
-    b = (b & 0xcc) >> 2 | (b & 0x33) << 2;
-    b = (b & 0xaa) >> 1 | (b & 0x55) << 1;
-    return b;
+    u8 bank = (tile_attr & BG_BANK) ? 1 : 0;
+    u8 off_y = ppu->fineY;
+    if (tile_attr & BG_YFLIP) off_y = 7 - off_y;
+    ppu->bg_tile_b0 = ppu->master->vram[bank][tile_addr + 2 * ppu->fineY];
+    ppu->bg_tile_b1 = ppu->master->vram[bank][tile_addr + 2 * ppu->fineY + 1];
+    if(tile_attr & BG_XFLIP) {
+        ppu->bg_tile_b0 = reverse_byte(ppu->bg_tile_b0);
+        ppu->bg_tile_b1 = reverse_byte(ppu->bg_tile_b1);
+    }
+    if (tile_attr & BG_BGOVER) ppu->bg_tile_bgover = ~0;
 }
 
 static void load_obj_tile(struct gb_ppu* ppu) {
@@ -165,7 +173,7 @@ void ppu_clock(struct gb_ppu* ppu) {
 
             if (ppu->screenX >= 0) {
                 ppu->screen[ppu->scanline * (ppu->pitch / 4) + ppu->screenX] =
-                    colors[color];
+                    gbemu.dmg_colors[color];
             }
 
             ppu->bg_tile_b0 <<= 1;

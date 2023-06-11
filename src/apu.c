@@ -80,7 +80,7 @@ void apu_clock(struct gb_apu* apu) {
         if (apu->master->io[NR43] & NR43_DIV) {
             rate *= apu->master->io[NR43] & NR43_DIV;
         }
-        if (apu->ch4_counter == rate) {
+        if (apu->ch4_counter >= rate) {
             apu->ch4_counter = 0;
             u16 bit =
                 (~(apu->ch4_lfsr ^ (apu->ch4_lfsr >> 1))) & 1;

@@ -93,6 +93,8 @@ struct cartridge* cart_create(char* filename) {
     }
     fclose(fp);
 
+    cart->cgb_compat = cart->rom[0][0x0143] & 0x80;
+
     if (cart->ram_banks) {
         if (cart->battery) {
             int i = strlen(filename) - 1;

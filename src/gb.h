@@ -77,6 +77,22 @@ enum {
     WY = 0x4a,   // window y
     WX = 0x4b,   // window x + 7
     // 0x4d - 0x77 : cgb
+    KEY1 = 0x4d,
+    VBK = 0x4f, // vram bank
+    HDMA1 = 0x51, 
+    HDMA2 = 0x52,
+    HDMA3 = 0x53,
+    HDMA4 = 0x54,
+    HDMA5 = 0x55,
+    RP = 0x56,
+    BCPS = 0x68,
+    BCPD = 0x69,
+    OCPS = 0x6a,
+    OCPD = 0x6b,
+    OPRI = 0x6c,
+    SVBK = 0x70, // wram bank
+    PCM12 = 0x76,
+    PCM34 = 0x77
 };
 
 struct gb {
@@ -86,8 +102,10 @@ struct gb {
 
     struct cartridge* cart;
 
-    u8 vram[1][VRAM_BANK_SIZE];
-    u8 wram[2][WRAM_BANK_SIZE];
+    bool cgb_mode;
+
+    u8 vram[2][VRAM_BANK_SIZE];
+    u8 wram[8][WRAM_BANK_SIZE];
 
     u8 oam[OAM_SIZE];
 

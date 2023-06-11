@@ -42,6 +42,11 @@ bool emulator_init() {
 
     gbemu.paused = true;
 
+    gbemu.dmg_colors[0] = 0x00ffffff;
+    gbemu.dmg_colors[1] = 0x0000e000;
+    gbemu.dmg_colors[2] = 0x0009000;
+    gbemu.dmg_colors[3] = 0x00000000;
+
     return true;
 }
 
@@ -63,6 +68,8 @@ void emu_handle_event(SDL_Event e) {
 
     if (e.type == SDL_KEYDOWN) {
         switch (e.key.keysym.sym) {
+            case SDLK_t:
+                gbemu.force_dmg = !gbemu.force_dmg;
             case SDLK_r:
                 emu_reset();
                 break;

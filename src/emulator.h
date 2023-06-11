@@ -22,6 +22,9 @@ struct emulator {
     unsigned long frame;
 
     bool paused;
+
+    bool force_dmg;
+    Uint32 dmg_colors[4];
 };
 
 extern struct emulator gbemu;
