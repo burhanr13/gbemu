@@ -82,8 +82,7 @@ void apu_clock(struct gb_apu* apu) {
         }
         if (apu->ch4_counter >= rate) {
             apu->ch4_counter = 0;
-            u16 bit =
-                (~(apu->ch4_lfsr ^ (apu->ch4_lfsr >> 1))) & 1;
+            u16 bit = (~(apu->ch4_lfsr ^ (apu->ch4_lfsr >> 1))) & 1;
             apu->ch4_lfsr = (apu->ch4_lfsr & ~(1 << 15)) | (bit << 15);
             if (apu->master->io[NR43] & NR43_WIDTH) {
                 apu->ch4_lfsr = (apu->ch4_lfsr & ~(1 << 7)) | (bit << 7);

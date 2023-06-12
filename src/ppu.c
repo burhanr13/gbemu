@@ -70,19 +70,21 @@ static void load_obj_tile(struct gb_ppu* ppu) {
             obj_b0 = reverse_byte(obj_b0);
             obj_b1 = reverse_byte(obj_b1);
         }
+        
         u8 mask = 0;
         if (ppu->master->cgb_mode) {
             for (int j = 0; j < 8; j++) {
                 if (ppu->obj_oam_inds[(ppu->obj_oam_head + j) % 8] >
                     ppu->objs[i]) {
-                    ppu->obj_oam_inds[(ppu->obj_oam_head + j) % 8] =
-                        ppu->objs[i];
                     mask |= (1 << (7 - j));
                 }
             }
         }
         mask |= ~(ppu->obj_tile_b0 | ppu->obj_tile_b1);
+        mask &= obj_b0 | obj_b1;
 
+        ppu->obj_tile_b0 &= ~mask;
+        ppu->obj_tile_b1 &= ~mask;
         ppu->obj_tile_b0 |= obj_b0 & mask;
         ppu->obj_tile_b1 |= obj_b1 & mask;
         ppu->obj_tile_pal &= ~mask;
@@ -95,6 +97,11 @@ static void load_obj_tile(struct gb_ppu* ppu) {
         if ((obj_attr & OBJ_CPAL) & 0b001) ppu->obj_tile_cpal_b0 |= mask;
         if ((obj_attr & OBJ_CPAL) & 0b010) ppu->obj_tile_cpal_b1 |= mask;
         if ((obj_attr & OBJ_CPAL) & 0b100) ppu->obj_tile_cpal_b2 |= mask;
+        for (int j = 0; j < 8; j++) {
+            if (mask & (1 << (7 - j))) {
+                ppu->obj_oam_inds[(ppu->obj_oam_head + j) % 8] = ppu->objs[i];
+            }
+        }
     }
 }
 
@@ -267,6 +274,7 @@ void ppu_clock(struct gb_ppu* ppu) {
             ppu->obj_tile_cpal_b1 <<= 1;
             ppu->obj_tile_cpal_b2 <<= 1;
             ppu->obj_oam_inds[ppu->obj_oam_head++] = 0xff;
+            ppu->obj_oam_head &= 7;
         } else if (ppu->screenX == GB_SCREEN_W) {
             ppu->master->io[STAT] &= ~STAT_MODE;
         }

@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
 
             if (gbemu.gb->io[NR52]) {
                 while (SDL_GetQueuedAudioSize(gbemu.gb_audio) >
-                       10 * SAMPLE_BUF_LEN)
+                       4 * SAMPLE_BUF_LEN)
                     SDL_Delay(1);
             } else {
                 SDL_Delay(10);
