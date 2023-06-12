@@ -309,8 +309,20 @@ void write8(struct gb* bus, u16 addr, u8 data) {
             default:
                 if (bus->cgb_mode) {
                     switch (addr & 0x00ff) {
+                        case KEY1:
+                            break;
                         case VBK:
                             bus->io[VBK] = ~1 | (data & 1);
+                            break;
+                        case HDMA1:
+                            break;
+                        case HDMA2:
+                            break;
+                        case HDMA3:
+                            break;
+                        case HDMA4:
+                            break;
+                        case HDMA5:
                             break;
                         case BCPS:
                             bus->io[BCPS] = data;
@@ -473,6 +485,8 @@ void reset_gb(struct gb* gb, struct cartridge* cart) {
     gb->cpu.PC = 0x0100;
 
     gb->io[LCDC] |= LCDC_ENABLE;
+    gb->io[KEY1] = 0xff;
+    gb->io[HDMA5] = 0xff;
 }
 
 void gb_handle_event(struct gb* gb, SDL_Event* e) {
