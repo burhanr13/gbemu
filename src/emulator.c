@@ -83,6 +83,21 @@ void emu_handle_event(SDL_Event e) {
 }
 
 void emu_run_frame(bool audio) {
+    if(!(gbemu.gb->io[LCDC] & LCDC_ENABLE)){
+        for (int i = 0; i < 70224;i++){
+            tick_gb(gbemu.gb);
+            if (gbemu.gb->apu.samples_full) {
+                if (audio)
+                    SDL_QueueAudio(gbemu.gb_audio, gbemu.gb->apu.sample_buf,
+                                   sizeof gbemu.gb->apu.sample_buf);
+                gbemu.gb->apu.samples_full = false;
+            }
+            gbemu.cycle++;
+            if (gbemu.gb->io[LCDC] & LCDC_ENABLE) break;
+        }
+        return;
+    }
+
     SDL_LockTexture(gbemu.gb_screen, NULL, (void**) &gbemu.gb->ppu.screen,
                     &gbemu.gb->ppu.pitch);
     while (!gbemu.gb->ppu.frame_complete) {
@@ -94,6 +109,7 @@ void emu_run_frame(bool audio) {
             gbemu.gb->apu.samples_full = false;
         }
         gbemu.cycle++;
+        if (!(gbemu.gb->io[LCDC] & LCDC_ENABLE)) break;
     }
     gbemu.gb->ppu.frame_complete = false;
     SDL_UnlockTexture(gbemu.gb_screen);

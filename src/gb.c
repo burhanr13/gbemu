@@ -485,8 +485,6 @@ void reset_gb(struct gb* gb, struct cartridge* cart) {
     gb->cpu.PC = 0x0100;
 
     gb->io[LCDC] |= LCDC_ENABLE;
-    gb->io[KEY1] = 0xff;
-    gb->io[HDMA5] = 0xff;
 }
 
 void gb_handle_event(struct gb* gb, SDL_Event* e) {
