@@ -96,6 +96,8 @@ void apu_clock(struct gb_apu* apu) {
         u8 ch2_sample = apu->ch2_enable ? get_sample_ch2(apu) : 0;
         u8 ch3_sample = apu->ch3_enable ? get_sample_ch3(apu) : 0;
         u8 ch4_sample = apu->ch4_enable ? get_sample_ch4(apu) : 0;
+        apu->master->io[PCM12] = ch1_sample | (ch2_sample << 4);
+        apu->master->io[PCM34] = ch3_sample | (ch4_sample << 4);
 
         u8 l_sample = 0, r_sample = 0;
         if (apu->master->io[NR51] & (1 << 0)) r_sample += ch1_sample;

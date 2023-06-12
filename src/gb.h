@@ -86,15 +86,15 @@ enum {
     HDMA3 = 0x53,
     HDMA4 = 0x54,
     HDMA5 = 0x55,
-    RP = 0x56,
+    RP = 0x56, // IR communication
     BCPS = 0x68, // bg color palette spec
     BCPD = 0x69, // bg color palette data
     OCPS = 0x6a, // obj color palette spec
     OCPD = 0x6b, // obj color palette data
     OPRI = 0x6c, // obj priority mode
     SVBK = 0x70, // wram bank
-    PCM12 = 0x76,
-    PCM34 = 0x77
+    PCM12 = 0x76, // ch1,2 output
+    PCM34 = 0x77 // ch3,4 output
 };
 
 struct gb {
