@@ -48,7 +48,7 @@ bool emulator_init() {
     gbemu.dmg_colors[3] = 0x00000000;
 
     gbemu.speed = 1;
-    gbemu.speedup_speed = 4;
+    gbemu.speedup_speed = 5;
 
     return true;
 }
@@ -87,13 +87,16 @@ void emu_handle_event(SDL_Event e) {
                     gbemu.speed = 1;
                 }
                 break;
+            case SDLK_m:
+                gbemu.muted = !gbemu.muted;
+                break;
             default:
                 break;
         }
     }
 }
 
-void emu_run_frame(bool audio) {
+void emu_run_frame(bool video, bool audio) {
     if (!(gbemu.gb->io[LCDC] & LCDC_ENABLE)) {
         for (int i = 0; i < 70224; i++) {
             tick_gb(gbemu.gb);
@@ -109,8 +112,12 @@ void emu_run_frame(bool audio) {
         return;
     }
 
-    SDL_LockTexture(gbemu.gb_screen, NULL, (void**) &gbemu.gb->ppu.screen,
-                    &gbemu.gb->ppu.pitch);
+    if (video) {
+        SDL_LockTexture(gbemu.gb_screen, NULL, (void**) &gbemu.gb->ppu.screen,
+                        &gbemu.gb->ppu.pitch);
+    } else {
+        gbemu.gb->ppu.screen = NULL;
+    }
     while (!gbemu.gb->ppu.frame_complete) {
         tick_gb(gbemu.gb);
         if (gbemu.gb->apu.samples_full) {
@@ -123,7 +130,9 @@ void emu_run_frame(bool audio) {
         if (!(gbemu.gb->io[LCDC] & LCDC_ENABLE)) break;
     }
     gbemu.gb->ppu.frame_complete = false;
-    SDL_UnlockTexture(gbemu.gb_screen);
+    if (video) {
+        SDL_UnlockTexture(gbemu.gb_screen);
+    }
     gbemu.frame++;
 }
 

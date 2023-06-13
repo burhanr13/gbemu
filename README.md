@@ -11,15 +11,15 @@ An emulator for the Game Boy, a handheld game console from the 1990s. Currently 
 - MBC1,3,5
 - audio
 - controller support
+- fast forward
 
 ### In Progress:
 - game boy color support
 
 ### Todo:
 - other mappers and RTC
-- configuration and emulator controls
+- configuration
 - save states
-- fast forward
 - cycle accuracy
 - serial communication
 
@@ -47,3 +47,4 @@ Hotkeys:
 - Reset : R
 - Reset and switch between gb/gbc : T
 - Pause : P
+- Toggle Fast forward : Tab

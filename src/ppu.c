@@ -70,7 +70,7 @@ static void load_obj_tile(struct gb_ppu* ppu) {
             obj_b0 = reverse_byte(obj_b0);
             obj_b1 = reverse_byte(obj_b1);
         }
-        
+
         u8 mask = 0;
         if (ppu->master->cgb_mode) {
             for (int j = 0; j < 8; j++) {
@@ -249,7 +249,7 @@ void ppu_clock(struct gb_ppu* ppu) {
                 }
             }
 
-            if (ppu->screenX >= 0) {
+            if (ppu->screen && ppu->screenX >= 0) {
                 ppu->screen[ppu->scanline * (ppu->pitch / 4) + ppu->screenX] =
                     color;
             }

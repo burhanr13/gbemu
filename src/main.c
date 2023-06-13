@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
         }
 
         if (!gbemu.paused) {
-            emu_run_frame(true);
+            emu_run_frame(gbemu.frame % gbemu.speed == 0, !gbemu.muted);
 
             SDL_RenderClear(gbemu.main_renderer);
             int windowW, windowH;
@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
                 SDL_RenderPresent(gbemu.main_renderer);
             }
 
-            if (gbemu.gb->io[NR52]) {
+            if (!gbemu.muted && gbemu.gb->io[NR52]) {
                 while (SDL_GetQueuedAudioSize(gbemu.gb_audio) >
                        4 * SAMPLE_BUF_LEN)
                     SDL_Delay(1);

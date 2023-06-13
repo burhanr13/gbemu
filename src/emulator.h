@@ -22,6 +22,7 @@ struct emulator {
     unsigned long frame;
 
     bool paused;
+    bool muted;
 
     bool force_dmg;
     Uint32 dmg_colors[4];
@@ -37,7 +38,7 @@ bool emulator_init();
 void emulator_quit();
 
 void emu_handle_event(SDL_Event e);
-void emu_run_frame(bool audio);
+void emu_run_frame(bool video, bool audio);
 
 bool emu_load_rom(char* filename);
 void emu_reset();

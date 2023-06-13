@@ -340,7 +340,7 @@ void write8(struct gb* bus, u16 addr, u8 data) {
                                 if (bus->hdma_hblank) {
                                     bus->hdma_index = 0;
                                 } else {
-                                    bus->hdma_index = 10;
+                                    bus->hdma_index = 0x10;
                                 }
                             } else if (!(data & (1 << 7))) {
                                 bus->hdma_active = false;
