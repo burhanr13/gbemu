@@ -44,6 +44,7 @@ void apu_clock(struct gb_apu* apu) {
         apu->master->io[NR52] = 0;
         apu->apu_div = 0;
         apu->sample_ind = 0;
+        apu->global_counter = 0;
         return;
     }
 
@@ -52,9 +53,9 @@ void apu_clock(struct gb_apu* apu) {
                             (apu->ch3_enable ? 0b0100 : 0) |
                             (apu->ch4_enable ? 0b1000 : 0);
 
-    u8 cpu_speed = (apu->master->io[KEY1] & (1 << 7)) ? 2 : 1;
+    apu->global_counter++;
 
-    if (apu->master->div % (2 * cpu_speed) == 0) {
+    if (apu->global_counter % 2 == 0) {
         apu->ch3_counter++;
         if (apu->ch3_counter == 2048) {
             apu->ch3_counter = apu->ch3_wavelen;
@@ -62,7 +63,7 @@ void apu_clock(struct gb_apu* apu) {
         }
     }
 
-    if (apu->master->div % (4 * cpu_speed) == 0) {
+    if (apu->global_counter % 4 == 0) {
         apu->ch1_counter++;
         if (apu->ch1_counter == 2048) {
             apu->ch1_counter = apu->ch1_wavelen;
@@ -76,7 +77,7 @@ void apu_clock(struct gb_apu* apu) {
         }
     }
 
-    if (apu->master->div % (8 * cpu_speed) == 0) {
+    if (apu->global_counter % 8 == 0) {
         apu->ch4_counter++;
         int rate = 2 << ((apu->master->io[NR43] & NR43_SHIFT) >> 4);
         if (apu->master->io[NR43] & NR43_DIV) {
@@ -93,7 +94,7 @@ void apu_clock(struct gb_apu* apu) {
         }
     }
 
-    if (apu->master->div % (SAMPLE_RATE * cpu_speed) == 0) {
+    if (apu->global_counter % SAMPLE_RATE == 0) {
         u8 ch1_sample = apu->ch1_enable ? get_sample_ch1(apu) : 0;
         u8 ch2_sample = apu->ch2_enable ? get_sample_ch2(apu) : 0;
         u8 ch3_sample = apu->ch3_enable ? get_sample_ch3(apu) : 0;
@@ -122,7 +123,9 @@ void apu_clock(struct gb_apu* apu) {
         }
     }
 
-    if (apu->master->div % (APU_DIV_RATE * cpu_speed) == 0) {
+    u16 effective_apu_div_rate = APU_DIV_RATE;
+    if (apu->master->io[KEY1] & (1 << 7)) effective_apu_div_rate <<= 1;
+    if (apu->master->div % effective_apu_div_rate == 0) {
         apu->apu_div++;
 
         if (apu->apu_div % 2 == 0) {

@@ -34,6 +34,8 @@ struct gb_apu {
     int sample_ind;
     bool samples_full;
 
+    long global_counter;
+
     bool ch1_enable;
     u16 ch1_counter;
     u16 ch1_wavelen;

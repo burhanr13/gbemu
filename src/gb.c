@@ -337,7 +337,11 @@ void write8(struct gb* bus, u16 addr, u8 data) {
                                 bus->hdma_hblank = data & (1 << 7);
                                 bus->io[HDMA5] = data & ~(1 << 7);
                                 bus->hdma_block = 0;
-                                bus->hdma_index = 0;
+                                if (bus->hdma_hblank) {
+                                    bus->hdma_index = 0;
+                                } else {
+                                    bus->hdma_index = 10;
+                                }
                             } else if (!(data & (1 << 7))) {
                                 bus->hdma_active = false;
                                 bus->io[HDMA5] &= 1 << 7;
@@ -405,8 +409,8 @@ void tick_gb(struct gb* gb) {
     if (!(gb->io[KEY1] & (1 << 7)) || gb->div % 2 == 0) {
         ppu_clock(&gb->ppu);
         if (gb->hdma_active) run_hdma(gb);
+        apu_clock(&gb->apu);
     }
-    apu_clock(&gb->apu);
     cpu_clock(&gb->cpu);
 }
 
