@@ -23,7 +23,7 @@ An emulator for the Game Boy and Game Boy Color. Most games should be playable w
 - super game boy palettes
 
 ## Compilation
-This project uses SDL2 as a dependency and that library is needed to compile and link the executable. The Makefile can be used to compile the project.
+This project uses SDL2 as a dependency and that library is needed to compile and link the executable. Use `make` or `make debug` to compile with debug symbols or use `make release` to compile the whole application with optimization.
 
 ## How to use
 Run the executable with the ROM file path as the only command line argument. You can use the keyboard or connect a game controller prior to running the emulator.
