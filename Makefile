@@ -1,6 +1,6 @@
 CC := gcc
 CFLAGS := -g -Wall -Werror
-CPPFLAGS := -MP -MMD
+CPPFLAGS := -I/opt/homebrew/include -MP -MMD
 LDFLAGS := $(shell sdl2-config --libs)
 
 BUILD_DIR := ./build
@@ -17,7 +17,7 @@ debug: $(BUILD_DIR)/$(TARGET_EXEC)
 
 .PHONY: release
 release:
-	$(CC) -o ./$(TARGET_EXEC) -O3 $(SRCS:%=$(SRC_DIR)/%.c) $(LDFLAGS)
+	$(CC) -o ./$(TARGET_EXEC) -I/opt/homebrew/include -O3 $(SRCS:%=$(SRC_DIR)/%.c) $(LDFLAGS)
 
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
 	$(CC) -o $@ $(CFLAGS) $(CPPFLAGS) $^ $(LDFLAGS)
