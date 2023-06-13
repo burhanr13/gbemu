@@ -497,6 +497,7 @@ void run_hdma(struct gb* gb) {
     if (gb->hdma_cycles == 0) {
         if (gb->io[HDMA5] == 0xff) {
             gb->hdma_active = false;
+            gb->hdma_index = 0;
             return;
         }
         if (gb->hdma_index > 0) {

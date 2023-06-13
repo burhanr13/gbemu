@@ -277,7 +277,8 @@ void ppu_clock(struct gb_ppu* ppu) {
             ppu->obj_oam_head &= 7;
         } else if (ppu->screenX == GB_SCREEN_W) {
             ppu->master->io[STAT] &= ~STAT_MODE;
-            if (ppu->master->hdma_hblank) ppu->master->hdma_index = 0x10;
+            if (ppu->master->hdma_active && ppu->master->hdma_hblank)
+                ppu->master->hdma_index = 0x10;
         }
     } else if (ppu->scanline == GB_SCREEN_H && ppu->cycle == 0) {
         ppu->master->io[IF] |= I_VBLANK;

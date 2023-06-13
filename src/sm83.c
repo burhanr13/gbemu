@@ -600,7 +600,7 @@ void run_instruction(struct sm83* cpu) {
 void cpu_clock(struct sm83* cpu) {
     if (cpu->ill) return;
 
-    if (cpu->master->hdma_cycles) return;
+    if (cpu->master->hdma_index) return;
     if (cpu->cycles == 0 && (cpu->master->IE & cpu->master->io[IF])) {
         cpu->halt = false;
         if (cpu->master->io[IF] & I_JOYPAD) cpu->stop = false;
