@@ -64,17 +64,17 @@ int main(int argc, char** argv) {
                 SDL_RenderCopy(gbemu.main_renderer, gbemu.gb_screen, NULL,
                                &dst);
                 SDL_RenderPresent(gbemu.main_renderer);
-            }
 
-            if (!gbemu.muted && gbemu.gb->io[NR52]) {
-                while (SDL_GetQueuedAudioSize(gbemu.gb_audio) >
-                       4 * SAMPLE_BUF_LEN)
-                    SDL_Delay(1);
-            } else {
-                SDL_Delay(10 / gbemu.speed);
+                if (!gbemu.muted && gbemu.gb->io[NR52]) {
+                    while (SDL_GetQueuedAudioSize(gbemu.gb_audio) >
+                           4 * SAMPLE_BUF_LEN)
+                        SDL_Delay(1);
+                } else {
+                    SDL_Delay(10);
+                }
             }
         } else {
-            SDL_Delay(10 / gbemu.speed);
+            SDL_Delay(10);
         }
     }
 

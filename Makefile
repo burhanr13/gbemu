@@ -1,5 +1,5 @@
 CC := gcc
-CFLAGS := -g -std=gnu17 -Wall -Werror
+CFLAGS := -g -Wall -Werror
 CPPFLAGS := $(shell sdl2-config --cflags) -MP -MMD
 LDFLAGS := $(shell sdl2-config --libs)
 
@@ -12,12 +12,16 @@ SRCS := $(basename $(notdir $(wildcard $(SRC_DIR)/*.c)))
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
 
-.PHONY: all
-all: $(BUILD_DIR)/$(TARGET_EXEC)
+.PHONY: debug
+debug: $(BUILD_DIR)/$(TARGET_EXEC)
+
+.PHONY: release
+release:
+	$(CC) -o ./$(TARGET_EXEC) -O3 $(SRCS:%=$(SRC_DIR)/%.c) $(LDFLAGS)
 
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
 	$(CC) -o $@ $(CFLAGS) $(CPPFLAGS) $^ $(LDFLAGS)
-	cp $(BUILD_DIR)/$(TARGET_EXEC) ./$(TARGET_EXEC)
+	cp $(BUILD_DIR)/$(TARGET_EXEC) ./$(TARGET_EXEC)-dbg
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	mkdir -p $(dir $@)

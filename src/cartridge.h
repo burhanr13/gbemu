@@ -4,7 +4,7 @@
 #include "types.h"
 
 #define ROM_BANK_SIZE 0x4000  // 16k
-#define ERAM_BANK_SIZE 0x2000 // 8k
+#define SRAM_BANK_SIZE 0x2000 // 8k
 
 enum mbc { MBC0, MBC1, MBC2, MBC3, MMM01, MBC5, MBC6, MBC7 };
 
@@ -17,7 +17,7 @@ struct cartridge {
     int ram_banks;
 
     u8 (*rom)[ROM_BANK_SIZE];
-    u8 (*ram)[ERAM_BANK_SIZE];
+    u8 (*ram)[SRAM_BANK_SIZE];
 
     bool battery;
     int sav_fd;

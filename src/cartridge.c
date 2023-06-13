@@ -108,12 +108,17 @@ struct cartridge* cart_create(char* filename) {
             cart->sav_fd =
                 open(sav_filename, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
             free(sav_filename);
-            ftruncate(cart->sav_fd, cart->ram_banks * ERAM_BANK_SIZE);
+            if (ftruncate(cart->sav_fd, cart->ram_banks * SRAM_BANK_SIZE)) {
+                close(cart->sav_fd);
+                free(cart->rom);
+                free(cart);
+                return NULL;
+            }
             cart->ram =
-                mmap(NULL, cart->ram_banks * ERAM_BANK_SIZE,
+                mmap(NULL, cart->ram_banks * SRAM_BANK_SIZE,
                      PROT_READ | PROT_WRITE, MAP_SHARED, cart->sav_fd, 0);
         } else {
-            cart->ram = calloc(cart->ram_banks, ERAM_BANK_SIZE);
+            cart->ram = calloc(cart->ram_banks, SRAM_BANK_SIZE);
         }
     }
     return cart;
@@ -123,7 +128,7 @@ void cart_destroy(struct cartridge* cart) {
     if (!cart) return;
     free(cart->rom);
     if (cart->battery) {
-        munmap(cart->ram, cart->ram_banks * ERAM_BANK_SIZE);
+        munmap(cart->ram, cart->ram_banks * SRAM_BANK_SIZE);
         close(cart->sav_fd);
     } else {
         free(cart->ram);
