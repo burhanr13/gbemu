@@ -79,13 +79,13 @@ enum {
     WY = 0x4a,   // window y
     WX = 0x4b,   // window x + 7
     // 0x4d - 0x77 : cgb
-    KEY1 = 0x4d,
+    KEY1 = 0x4d, // prepare speed switch
     VBK = 0x4f, // vram bank
-    HDMA1 = 0x51,
-    HDMA2 = 0x52,
-    HDMA3 = 0x53,
-    HDMA4 = 0x54,
-    HDMA5 = 0x55,
+    HDMA1 = 0x51, // vram dma source hi
+    HDMA2 = 0x52, // vram dma source lo
+    HDMA3 = 0x53, // vram dma dest hi
+    HDMA4 = 0x54, // vram dma dest lo
+    HDMA5 = 0x55, // vram dma length/mode/start
     RP = 0x56, // IR communication
     BCPS = 0x68, // bg color palette spec
     BCPD = 0x69, // bg color palette data
@@ -133,6 +133,14 @@ struct gb {
     bool dma_active;
     u8 dma_index;
     int dma_cycles;
+
+    u16 hdma_src;
+    u16 hdma_dest;
+    bool hdma_active;
+    bool hdma_hblank;
+    u8 hdma_block;
+    u8 hdma_index;
+    int hdma_cycles;
 };
 
 u8 read8(struct gb* bus, u16 addr);
@@ -146,6 +154,7 @@ void check_stat_irq(struct gb* gb);
 void clock_timers(struct gb* gb);
 void update_joyp(struct gb* gb);
 void run_dma(struct gb* gb);
+void run_hdma(struct gb* gb);
 
 void tick_gb(struct gb* gb);
 
