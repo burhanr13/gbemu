@@ -1,5 +1,6 @@
 #include "apu.h"
 
+#include "emulator.h"
 #include "gb.h"
 
 u8 duty_cycles[] = {0b11111110, 0b01111110, 0b01111000, 0b10000001};
@@ -53,73 +54,76 @@ void apu_clock(struct gb_apu* apu) {
                             (apu->ch3_enable ? 0b0100 : 0) |
                             (apu->ch4_enable ? 0b1000 : 0);
 
-    apu->global_counter++;
+    if (gbemu.cycle % gbemu.speed == 0) {
+        apu->global_counter++;
 
-    if (apu->global_counter % 2 == 0) {
-        apu->ch3_counter++;
-        if (apu->ch3_counter == 2048) {
-            apu->ch3_counter = apu->ch3_wavelen;
-            apu->ch3_sample_index++;
-        }
-    }
-
-    if (apu->global_counter % 4 == 0) {
-        apu->ch1_counter++;
-        if (apu->ch1_counter == 2048) {
-            apu->ch1_counter = apu->ch1_wavelen;
-            apu->ch1_duty_index++;
-        }
-
-        apu->ch2_counter++;
-        if (apu->ch2_counter == 2048) {
-            apu->ch2_counter = apu->ch2_wavelen;
-            apu->ch2_duty_index++;
-        }
-    }
-
-    if (apu->global_counter % 8 == 0) {
-        apu->ch4_counter++;
-        int rate = 2 << ((apu->master->io[NR43] & NR43_SHIFT) >> 4);
-        if (apu->master->io[NR43] & NR43_DIV) {
-            rate *= apu->master->io[NR43] & NR43_DIV;
-        }
-        if (apu->ch4_counter >= rate) {
-            apu->ch4_counter = 0;
-            u16 bit = (~(apu->ch4_lfsr ^ (apu->ch4_lfsr >> 1))) & 1;
-            apu->ch4_lfsr = (apu->ch4_lfsr & ~(1 << 15)) | (bit << 15);
-            if (apu->master->io[NR43] & NR43_WIDTH) {
-                apu->ch4_lfsr = (apu->ch4_lfsr & ~(1 << 7)) | (bit << 7);
+        if (apu->global_counter % 2 == 0) {
+            apu->ch3_counter++;
+            if (apu->ch3_counter == 2048) {
+                apu->ch3_counter = apu->ch3_wavelen;
+                apu->ch3_sample_index++;
             }
-            apu->ch4_lfsr >>= 1;
         }
-    }
 
-    if (apu->global_counter % SAMPLE_RATE == 0) {
-        u8 ch1_sample = apu->ch1_enable ? get_sample_ch1(apu) : 0;
-        u8 ch2_sample = apu->ch2_enable ? get_sample_ch2(apu) : 0;
-        u8 ch3_sample = apu->ch3_enable ? get_sample_ch3(apu) : 0;
-        u8 ch4_sample = apu->ch4_enable ? get_sample_ch4(apu) : 0;
-        apu->master->io[PCM12] = ch1_sample | (ch2_sample << 4);
-        apu->master->io[PCM34] = ch3_sample | (ch4_sample << 4);
+        if (apu->global_counter % 4 == 0) {
+            apu->ch1_counter++;
+            if (apu->ch1_counter == 2048) {
+                apu->ch1_counter = apu->ch1_wavelen;
+                apu->ch1_duty_index++;
+            }
 
-        u8 l_sample = 0, r_sample = 0;
-        if (apu->master->io[NR51] & (1 << 0)) r_sample += ch1_sample;
-        if (apu->master->io[NR51] & (1 << 1)) r_sample += ch2_sample;
-        if (apu->master->io[NR51] & (1 << 2)) r_sample += ch3_sample;
-        if (apu->master->io[NR51] & (1 << 3)) r_sample += ch4_sample;
-        if (apu->master->io[NR51] & (1 << 4)) l_sample += ch1_sample;
-        if (apu->master->io[NR51] & (1 << 5)) l_sample += ch2_sample;
-        if (apu->master->io[NR51] & (1 << 6)) l_sample += ch3_sample;
-        if (apu->master->io[NR51] & (1 << 7)) l_sample += ch4_sample;
+            apu->ch2_counter++;
+            if (apu->ch2_counter == 2048) {
+                apu->ch2_counter = apu->ch2_wavelen;
+                apu->ch2_duty_index++;
+            }
+        }
 
-        apu->sample_buf[apu->sample_ind++] =
-            (float) l_sample / 500 *
-            (((apu->master->io[NR50] & 0b01110000) >> 4) + 1);
-        apu->sample_buf[apu->sample_ind++] =
-            (float) r_sample / 500 * ((apu->master->io[NR50] & 0b00000111) + 1);
-        if (apu->sample_ind == SAMPLE_BUF_LEN) {
-            apu->samples_full = true;
-            apu->sample_ind = 0;
+        if (apu->global_counter % 8 == 0) {
+            apu->ch4_counter++;
+            int rate = 2 << ((apu->master->io[NR43] & NR43_SHIFT) >> 4);
+            if (apu->master->io[NR43] & NR43_DIV) {
+                rate *= apu->master->io[NR43] & NR43_DIV;
+            }
+            if (apu->ch4_counter >= rate) {
+                apu->ch4_counter = 0;
+                u16 bit = (~(apu->ch4_lfsr ^ (apu->ch4_lfsr >> 1))) & 1;
+                apu->ch4_lfsr = (apu->ch4_lfsr & ~(1 << 15)) | (bit << 15);
+                if (apu->master->io[NR43] & NR43_WIDTH) {
+                    apu->ch4_lfsr = (apu->ch4_lfsr & ~(1 << 7)) | (bit << 7);
+                }
+                apu->ch4_lfsr >>= 1;
+            }
+        }
+
+        if (apu->global_counter % SAMPLE_RATE == 0) {
+            u8 ch1_sample = apu->ch1_enable ? get_sample_ch1(apu) : 0;
+            u8 ch2_sample = apu->ch2_enable ? get_sample_ch2(apu) : 0;
+            u8 ch3_sample = apu->ch3_enable ? get_sample_ch3(apu) : 0;
+            u8 ch4_sample = apu->ch4_enable ? get_sample_ch4(apu) : 0;
+            apu->master->io[PCM12] = ch1_sample | (ch2_sample << 4);
+            apu->master->io[PCM34] = ch3_sample | (ch4_sample << 4);
+
+            u8 l_sample = 0, r_sample = 0;
+            if (apu->master->io[NR51] & (1 << 0)) r_sample += ch1_sample;
+            if (apu->master->io[NR51] & (1 << 1)) r_sample += ch2_sample;
+            if (apu->master->io[NR51] & (1 << 2)) r_sample += ch3_sample;
+            if (apu->master->io[NR51] & (1 << 3)) r_sample += ch4_sample;
+            if (apu->master->io[NR51] & (1 << 4)) l_sample += ch1_sample;
+            if (apu->master->io[NR51] & (1 << 5)) l_sample += ch2_sample;
+            if (apu->master->io[NR51] & (1 << 6)) l_sample += ch3_sample;
+            if (apu->master->io[NR51] & (1 << 7)) l_sample += ch4_sample;
+
+            apu->sample_buf[apu->sample_ind++] =
+                (float) l_sample / 500 *
+                (((apu->master->io[NR50] & 0b01110000) >> 4) + 1);
+            apu->sample_buf[apu->sample_ind++] =
+                (float) r_sample / 500 *
+                ((apu->master->io[NR50] & 0b00000111) + 1);
+            if (apu->sample_ind == SAMPLE_BUF_LEN) {
+                apu->samples_full = true;
+                apu->sample_ind = 0;
+            }
         }
     }
 

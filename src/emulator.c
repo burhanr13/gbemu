@@ -47,6 +47,9 @@ bool emulator_init() {
     gbemu.dmg_colors[2] = 0x0009000;
     gbemu.dmg_colors[3] = 0x00000000;
 
+    gbemu.speed = 1;
+    gbemu.speedup_speed = 4;
+
     return true;
 }
 
@@ -76,6 +79,14 @@ void emu_handle_event(SDL_Event e) {
             case SDLK_p:
                 gbemu.paused = !gbemu.paused;
                 break;
+            case SDLK_TAB:
+                gbemu.speedup = !gbemu.speedup;
+                if (gbemu.speedup) {
+                    gbemu.speed = gbemu.speedup_speed;
+                } else {
+                    gbemu.speed = 1;
+                }
+                break;
             default:
                 break;
         }
@@ -83,8 +94,8 @@ void emu_handle_event(SDL_Event e) {
 }
 
 void emu_run_frame(bool audio) {
-    if(!(gbemu.gb->io[LCDC] & LCDC_ENABLE)){
-        for (int i = 0; i < 70224;i++){
+    if (!(gbemu.gb->io[LCDC] & LCDC_ENABLE)) {
+        for (int i = 0; i < 70224; i++) {
             tick_gb(gbemu.gb);
             if (gbemu.gb->apu.samples_full) {
                 if (audio)

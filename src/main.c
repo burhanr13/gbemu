@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    if(!emu_load_rom(argv[1])){
+    if (!emu_load_rom(argv[1])) {
         return -1;
     }
 
@@ -59,18 +59,22 @@ int main(int argc, char** argv) {
                 dst.h = dst.w * GB_SCREEN_H / GB_SCREEN_W;
                 dst.y = (windowH - dst.h) / 2;
             }
-            SDL_RenderCopy(gbemu.main_renderer, gbemu.gb_screen, NULL, &dst);
-            SDL_RenderPresent(gbemu.main_renderer);
+
+            if (gbemu.frame % gbemu.speed == 0) {
+                SDL_RenderCopy(gbemu.main_renderer, gbemu.gb_screen, NULL,
+                               &dst);
+                SDL_RenderPresent(gbemu.main_renderer);
+            }
 
             if (gbemu.gb->io[NR52]) {
                 while (SDL_GetQueuedAudioSize(gbemu.gb_audio) >
                        4 * SAMPLE_BUF_LEN)
                     SDL_Delay(1);
             } else {
-                SDL_Delay(10);
+                SDL_Delay(10 / gbemu.speed);
             }
         } else {
-            SDL_Delay(10);
+            SDL_Delay(10 / gbemu.speed);
         }
     }
 

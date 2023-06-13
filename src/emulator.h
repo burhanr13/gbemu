@@ -25,6 +25,10 @@ struct emulator {
 
     bool force_dmg;
     Uint32 dmg_colors[4];
+
+    bool speedup;
+    int speedup_speed;
+    int speed;
 };
 
 extern struct emulator gbemu;
