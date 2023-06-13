@@ -351,6 +351,7 @@ void write8(struct gb* bus, u16 addr, u8 data) {
                                 (bus->io[STAT] & STAT_MODE) != 3) {
                                 bus->bg_cram[bus->io[BCPS] & CPS_ADDR] = data;
                             }
+
                             if (bus->io[BCPS] & CPS_INC) {
                                 bus->io[BCPS]++;
                                 bus->io[BCPS] &= ~(1 << 6);
@@ -401,8 +402,10 @@ void tick_gb(struct gb* gb) {
     clock_timers(gb);
     update_joyp(gb);
     if (gb->dma_active) run_dma(gb);
-    ppu_clock(&gb->ppu);
-    if (gb->hdma_active) run_hdma(gb);
+    if (!(gb->io[KEY1] & (1 << 7)) || gb->div % 2 == 0) {
+        ppu_clock(&gb->ppu);
+        if (gb->hdma_active) run_hdma(gb);
+    }
     apu_clock(&gb->apu);
     cpu_clock(&gb->cpu);
 }

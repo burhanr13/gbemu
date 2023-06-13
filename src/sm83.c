@@ -203,7 +203,8 @@ void run_instruction(struct sm83* cpu) {
                             write16(cpu->master, addr, cpu->SP);
                             break;
                         case 2: // STOP
-                            if(cpu->master->io[KEY1] & 1){
+                            cpu->master->div = 0x0000;
+                            if (cpu->master->io[KEY1] & 1) {
                                 cpu->master->io[KEY1] =
                                     ~cpu->master->io[KEY1] & (1 << 7);
                             } else {

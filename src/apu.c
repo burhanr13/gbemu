@@ -52,7 +52,9 @@ void apu_clock(struct gb_apu* apu) {
                             (apu->ch3_enable ? 0b0100 : 0) |
                             (apu->ch4_enable ? 0b1000 : 0);
 
-    if (apu->master->div % 2 == 0) {
+    u8 cpu_speed = (apu->master->io[KEY1] & (1 << 7)) ? 2 : 1;
+
+    if (apu->master->div % (2 * cpu_speed) == 0) {
         apu->ch3_counter++;
         if (apu->ch3_counter == 2048) {
             apu->ch3_counter = apu->ch3_wavelen;
@@ -60,7 +62,7 @@ void apu_clock(struct gb_apu* apu) {
         }
     }
 
-    if (apu->master->div % 4 == 0) {
+    if (apu->master->div % (4 * cpu_speed) == 0) {
         apu->ch1_counter++;
         if (apu->ch1_counter == 2048) {
             apu->ch1_counter = apu->ch1_wavelen;
@@ -74,7 +76,7 @@ void apu_clock(struct gb_apu* apu) {
         }
     }
 
-    if (apu->master->div % 8 == 0) {
+    if (apu->master->div % (8 * cpu_speed) == 0) {
         apu->ch4_counter++;
         int rate = 2 << ((apu->master->io[NR43] & NR43_SHIFT) >> 4);
         if (apu->master->io[NR43] & NR43_DIV) {
@@ -91,7 +93,7 @@ void apu_clock(struct gb_apu* apu) {
         }
     }
 
-    if (apu->master->div % SAMPLE_RATE == 0) {
+    if (apu->master->div % (SAMPLE_RATE * cpu_speed) == 0) {
         u8 ch1_sample = apu->ch1_enable ? get_sample_ch1(apu) : 0;
         u8 ch2_sample = apu->ch2_enable ? get_sample_ch2(apu) : 0;
         u8 ch3_sample = apu->ch3_enable ? get_sample_ch3(apu) : 0;
@@ -120,7 +122,7 @@ void apu_clock(struct gb_apu* apu) {
         }
     }
 
-    if (apu->master->div % APU_DIV_RATE == 0) {
+    if (apu->master->div % (APU_DIV_RATE * cpu_speed) == 0) {
         apu->apu_div++;
 
         if (apu->apu_div % 2 == 0) {
