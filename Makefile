@@ -24,7 +24,6 @@ $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
 	cp $(BUILD_DIR)/$(TARGET_EXEC) ./$(TARGET_EXEC)-dbg
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
-	mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 .PHONY: clean
