@@ -1,6 +1,6 @@
 CC := gcc
 CFLAGS := -g -Wall -Werror
-CPPFLAGS := $(shell sdl2-config --cflags) -MP -MMD
+CPPFLAGS := -MP -MMD
 LDFLAGS := $(shell sdl2-config --libs)
 
 BUILD_DIR := ./build
