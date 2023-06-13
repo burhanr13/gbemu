@@ -1,6 +1,6 @@
 # gbemu
 
-An emulator for the Game Boy, a handheld game console from the 1990s. Currently many games are playable with full graphics and audio support.
+An emulator for the Game Boy and Game Boy Color. Most games should be playable with full color graphics and audio support.
 
 ## Task List/Features
 
@@ -12,9 +12,7 @@ An emulator for the Game Boy, a handheld game console from the 1990s. Currently 
 - audio
 - controller support
 - fast forward
-
-### In Progress:
-- game boy color support
+- Game Boy Color support
 
 ### Todo:
 - other mappers and RTC
@@ -22,6 +20,7 @@ An emulator for the Game Boy, a handheld game console from the 1990s. Currently 
 - save states
 - cycle accuracy
 - serial communication
+- super game boy palettes
 
 ## Compilation
 This project uses SDL2 as a dependency and that library is needed to compile and link the executable. The Makefile can be used to compile the project.
@@ -47,4 +46,5 @@ Hotkeys:
 - Reset : R
 - Reset and switch between gb/gbc : T
 - Pause : P
+- Mute : M
 - Toggle Fast forward : Tab
