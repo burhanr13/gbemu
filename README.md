@@ -13,14 +13,16 @@ An emulator for the Game Boy and Game Boy Color. Most games should be playable w
 - controller support
 - fast forward
 - Game Boy Color support
+- real time clock for MBC3
 
 ### Todo:
-- other mappers and RTC
+- other MBCs
 - configuration
 - save states
 - cycle accuracy
 - serial communication
 - super game boy palettes
+- GUI
 
 ## Compilation
 This project uses SDL2 as a dependency and that library is needed to compile and link the executable. Use `make` or `make debug` to compile with debug symbols or use `make release` to compile the whole application with optimization.

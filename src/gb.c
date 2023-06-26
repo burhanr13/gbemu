@@ -545,6 +545,7 @@ void reset_gb(struct gb* gb, struct cartridge* cart) {
     gb->cpu.master = gb;
     gb->ppu.master = gb;
     gb->apu.master = gb;
+    memset(&cart->st, 0x00, sizeof cart->st);
 
     gb->cart = cart;
     if (gb->cart && gb->cart->cgb_compat && !gbemu.force_dmg) {
