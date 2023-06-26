@@ -583,7 +583,7 @@ void gb_handle_event(struct gb* gb, SDL_Event* e) {
             case SDL_SCANCODE_X:
                 gb->jp_action |= JP_L_B;
                 break;
-            case SDL_SCANCODE_BACKSPACE:
+            case SDL_SCANCODE_RSHIFT:
                 gb->jp_action |= JP_U_SL;
                 break;
             case SDL_SCANCODE_RETURN:
@@ -613,7 +613,7 @@ void gb_handle_event(struct gb* gb, SDL_Event* e) {
             case SDL_SCANCODE_X:
                 gb->jp_action &= ~JP_L_B;
                 break;
-            case SDL_SCANCODE_BACKSPACE:
+            case SDL_SCANCODE_RSHIFT:
                 gb->jp_action &= ~JP_U_SL;
                 break;
             case SDL_SCANCODE_RETURN:

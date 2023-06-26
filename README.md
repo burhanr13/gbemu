@@ -34,7 +34,7 @@ Keyboard Controls:
 - A : Z
 - B : X
 - Start : Return
-- Select : Backspace
+- Select : Right Shift
 - Dpad : arrow keys
 
 Gamepad Controls:
