@@ -90,6 +90,12 @@ void emu_handle_event(SDL_Event e) {
             case SDLK_m:
                 gbemu.muted = !gbemu.muted;
                 break;
+            case SDLK_9:
+                save_state();
+                break;
+            case SDLK_0:
+                load_state();
+                break;
             default:
                 break;
         }
@@ -112,12 +118,6 @@ void emu_run_frame(bool video, bool audio) {
         return;
     }
 
-    if (video) {
-        SDL_LockTexture(gbemu.gb_screen, NULL, (void**) &gbemu.gb->ppu.screen,
-                        &gbemu.gb->ppu.pitch);
-    } else {
-        gbemu.gb->ppu.screen = NULL;
-    }
     while (!gbemu.gb->ppu.frame_complete) {
         tick_gb(gbemu.gb);
         if (gbemu.gb->apu.samples_full) {
@@ -131,6 +131,10 @@ void emu_run_frame(bool video, bool audio) {
     }
     gbemu.gb->ppu.frame_complete = false;
     if (video) {
+        Uint32* pixels;
+        int pitch;
+        SDL_LockTexture(gbemu.gb_screen, NULL, (void**) &pixels, &pitch);
+        memcpy(pixels, gbemu.gb->ppu.screen, sizeof gbemu.gb->ppu.screen);
         SDL_UnlockTexture(gbemu.gb_screen);
     }
     gbemu.frame++;
@@ -155,3 +159,7 @@ void emu_reset() {
     gbemu.frame = 0;
     gbemu.paused = false;
 }
+
+void save_state() {}
+
+void load_state() {}

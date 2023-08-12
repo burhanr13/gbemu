@@ -43,4 +43,7 @@ void emu_run_frame(bool video, bool audio);
 bool emu_load_rom(char* filename);
 void emu_reset();
 
+void save_state();
+void load_state();
+
 #endif

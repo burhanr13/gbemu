@@ -249,9 +249,8 @@ void ppu_clock(struct gb_ppu* ppu) {
                 }
             }
 
-            if (ppu->screen && ppu->screenX >= 0) {
-                ppu->screen[ppu->scanline * (ppu->pitch / 4) + ppu->screenX] =
-                    color;
+            if (ppu->screenX >= 0) {
+                ppu->screen[ppu->scanline][ppu->screenX] = color;
             }
 
             ppu->bg_tile_b0 <<= 1;

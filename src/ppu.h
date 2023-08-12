@@ -55,8 +55,7 @@ struct gb;
 struct gb_ppu {
     struct gb* master;
 
-    Uint32* screen;
-    int pitch;
+    Uint32 screen[GB_SCREEN_H][GB_SCREEN_W];
 
     u8 bg_tile_b0;
     u8 bg_tile_b1;

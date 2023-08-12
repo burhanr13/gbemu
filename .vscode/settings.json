@@ -1,0 +1,9 @@
+{
+    "makefile.launchConfigurations": [
+        {
+            "cwd": "/home/burhanr/Documents/coding/c/gbemu/build",
+            "binaryPath": "/home/burhanr/Documents/coding/c/gbemu/build/gbemu",
+            "binaryArgs": []
+        }
+    ]
+}
