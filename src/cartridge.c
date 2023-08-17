@@ -112,6 +112,7 @@ struct cartridge* cart_create(char* filename) {
                      (cart->has_rtc ? sizeof(struct rtc) : 0);
 
     cart->cgb_compat = cart->rom[0][0x0143] & 0x80;
+    memcpy(cart->title, &cart->rom[0x0134], sizeof cart->title);
 
     if (cart->battery) {
         cart->sav_fd =

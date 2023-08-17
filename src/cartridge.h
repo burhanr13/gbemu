@@ -29,6 +29,7 @@ struct rtc {
 };
 
 struct cartridge {
+    u8 title[0x10];
     enum mbc mbc;
 
     int rom_banks;

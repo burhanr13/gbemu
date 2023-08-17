@@ -102,6 +102,14 @@ void emu_handle_event(SDL_Event e) {
     }
 }
 
+void draw_screen() {
+    Uint32* pixels;
+    int pitch;
+    SDL_LockTexture(gbemu.gb_screen, NULL, (void**) &pixels, &pitch);
+    memcpy(pixels, gbemu.gb->ppu.screen, sizeof gbemu.gb->ppu.screen);
+    SDL_UnlockTexture(gbemu.gb_screen);
+}
+
 void emu_run_frame(bool video, bool audio) {
     if (!(gbemu.gb->io[LCDC] & LCDC_ENABLE)) {
         for (int i = 0; i < 70224; i++) {
@@ -130,13 +138,7 @@ void emu_run_frame(bool video, bool audio) {
         if (!(gbemu.gb->io[LCDC] & LCDC_ENABLE)) break;
     }
     gbemu.gb->ppu.frame_complete = false;
-    if (video) {
-        Uint32* pixels;
-        int pitch;
-        SDL_LockTexture(gbemu.gb_screen, NULL, (void**) &pixels, &pitch);
-        memcpy(pixels, gbemu.gb->ppu.screen, sizeof gbemu.gb->ppu.screen);
-        SDL_UnlockTexture(gbemu.gb_screen);
-    }
+    if (video) draw_screen();
     gbemu.frame++;
 }
 
@@ -160,6 +162,67 @@ void emu_reset() {
     gbemu.paused = false;
 }
 
-void save_state() {}
+/*
+save state format:
+16byte cartridge header
+contents of gb struct
+cartridge state
+cartridge ram (if any)
+cartridge rtc (if any)
+*/
 
-void load_state() {}
+void save_state() {
+    FILE* sst_file = fopen(gbemu.cart->sst_filename, "wb");
+    fwrite(gbemu.cart->title, sizeof gbemu.cart->title, 1, sst_file);
+
+    gbemu.gb->cart = NULL;
+    gbemu.gb->cpu.master = NULL;
+    gbemu.gb->ppu.master = NULL;
+    gbemu.gb->apu.master = NULL;
+    fwrite(gbemu.gb, sizeof *gbemu.gb, 1, sst_file);
+    gbemu.gb->cart = gbemu.cart;
+    gbemu.gb->cpu.master = gbemu.gb;
+    gbemu.gb->ppu.master = gbemu.gb;
+    gbemu.gb->apu.master = gbemu.gb;
+
+    fwrite(&gbemu.cart->st, sizeof gbemu.cart->st, 1, sst_file);
+    if (gbemu.cart->ram_banks)
+        fwrite(gbemu.cart->ram, SRAM_BANK_SIZE, gbemu.cart->ram_banks,
+               sst_file);
+    if (gbemu.cart->has_rtc)
+        fwrite(gbemu.cart->rtc, sizeof *gbemu.cart->rtc, 1, sst_file);
+
+    fclose(sst_file);
+}
+
+void load_state() {
+    FILE* sst_file = fopen(gbemu.cart->sst_filename, "rb");
+
+    u8 title[0x10];
+    fread(title, sizeof gbemu.cart->title, 1, sst_file);
+    if(memcmp(title,gbemu.cart->title,sizeof title)){
+        fclose(sst_file);
+        SDL_ShowSimpleMessageBox(
+            SDL_MESSAGEBOX_ERROR, "gbemu",
+            "Invalid Save State!",
+            gbemu.main_window);
+        return;
+    }
+
+    fread(gbemu.gb, sizeof *gbemu.gb, 1, sst_file);
+    gbemu.gb->cart = gbemu.cart;
+    gbemu.gb->cpu.master = gbemu.gb;
+    gbemu.gb->ppu.master = gbemu.gb;
+    gbemu.gb->apu.master = gbemu.gb;
+
+    fread(&gbemu.cart->st, sizeof gbemu.cart->st, 1, sst_file);
+    if (gbemu.cart->ram_banks)
+        fread(gbemu.cart->ram, SRAM_BANK_SIZE, gbemu.cart->ram_banks,
+               sst_file);
+    if (gbemu.cart->has_rtc)
+        fread(gbemu.cart->rtc, sizeof *gbemu.cart->rtc, 1, sst_file);
+
+    fclose(sst_file);
+
+    draw_screen();
+}

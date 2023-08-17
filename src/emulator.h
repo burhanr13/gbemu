@@ -38,6 +38,8 @@ bool emulator_init();
 void emulator_quit();
 
 void emu_handle_event(SDL_Event e);
+
+void draw_screen();
 void emu_run_frame(bool video, bool audio);
 
 bool emu_load_rom(char* filename);
