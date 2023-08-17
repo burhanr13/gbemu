@@ -1,6 +1,7 @@
 #include "emulator.h"
 
 #include <SDL2/SDL.h>
+#include <zlib.h>
 
 #include "gb.h"
 
@@ -102,7 +103,7 @@ void emu_handle_event(SDL_Event e) {
     }
 }
 
-void draw_screen() {
+void update_texture() {
     Uint32* pixels;
     int pitch;
     SDL_LockTexture(gbemu.gb_screen, NULL, (void**) &pixels, &pitch);
@@ -138,7 +139,7 @@ void emu_run_frame(bool video, bool audio) {
         if (!(gbemu.gb->io[LCDC] & LCDC_ENABLE)) break;
     }
     gbemu.gb->ppu.frame_complete = false;
-    if (video) draw_screen();
+    if (video) update_texture();
     gbemu.frame++;
 }
 
@@ -169,65 +170,65 @@ contents of gb struct
 cartridge state
 cartridge ram (if any)
 cartridge rtc (if any)
+and this is all compressed in gzip format
 */
 
 void save_state() {
-    FILE* sst_file = fopen(gbemu.cart->sst_filename, "wb");
-    fwrite(gbemu.cart->title, sizeof gbemu.cart->title, 1, sst_file);
+    gzFile sst_file = gzopen(gbemu.cart->sst_filename, "wb");
+    gzfwrite(gbemu.cart->title, sizeof gbemu.cart->title, 1, sst_file);
 
     gbemu.gb->cart = NULL;
     gbemu.gb->cpu.master = NULL;
     gbemu.gb->ppu.master = NULL;
     gbemu.gb->apu.master = NULL;
-    fwrite(gbemu.gb, sizeof *gbemu.gb, 1, sst_file);
+    gzfwrite(gbemu.gb, sizeof *gbemu.gb, 1, sst_file);
     gbemu.gb->cart = gbemu.cart;
     gbemu.gb->cpu.master = gbemu.gb;
     gbemu.gb->ppu.master = gbemu.gb;
     gbemu.gb->apu.master = gbemu.gb;
 
-    fwrite(&gbemu.cart->st, sizeof gbemu.cart->st, 1, sst_file);
+    gzfwrite(&gbemu.cart->st, sizeof gbemu.cart->st, 1, sst_file);
     if (gbemu.cart->ram_banks)
-        fwrite(gbemu.cart->ram, SRAM_BANK_SIZE, gbemu.cart->ram_banks,
-               sst_file);
+        gzfwrite(gbemu.cart->ram, SRAM_BANK_SIZE, gbemu.cart->ram_banks,
+                 sst_file);
     if (gbemu.cart->has_rtc)
-        fwrite(gbemu.cart->rtc, sizeof *gbemu.cart->rtc, 1, sst_file);
+        gzfwrite(gbemu.cart->rtc, sizeof *gbemu.cart->rtc, 1, sst_file);
 
-    fclose(sst_file);
+    gzclose(sst_file);
 }
 
 void load_state() {
-    FILE* sst_file = fopen(gbemu.cart->sst_filename, "rb");
-    if(!sst_file){
+    gzFile sst_file = gzopen(gbemu.cart->sst_filename, "rb");
+    if (!sst_file) {
+        gzclose(sst_file);
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "gbemu",
                                  "No Save State!", gbemu.main_window);
         return;
     }
 
     u8 title[0x10];
-    fread(title, sizeof gbemu.cart->title, 1, sst_file);
-    if(memcmp(title,gbemu.cart->title,sizeof title)){
-        fclose(sst_file);
-        SDL_ShowSimpleMessageBox(
-            SDL_MESSAGEBOX_ERROR, "gbemu",
-            "Invalid Save State!",
-            gbemu.main_window);
+    gzfread(title, sizeof gbemu.cart->title, 1, sst_file);
+    if (memcmp(title, gbemu.cart->title, sizeof title)) {
+        gzclose(sst_file);
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "gbemu",
+                                 "Invalid Save State!", gbemu.main_window);
         return;
     }
 
-    fread(gbemu.gb, sizeof *gbemu.gb, 1, sst_file);
+    gzfread(gbemu.gb, sizeof *gbemu.gb, 1, sst_file);
     gbemu.gb->cart = gbemu.cart;
     gbemu.gb->cpu.master = gbemu.gb;
     gbemu.gb->ppu.master = gbemu.gb;
     gbemu.gb->apu.master = gbemu.gb;
 
-    fread(&gbemu.cart->st, sizeof gbemu.cart->st, 1, sst_file);
+    gzfread(&gbemu.cart->st, sizeof gbemu.cart->st, 1, sst_file);
     if (gbemu.cart->ram_banks)
-        fread(gbemu.cart->ram, SRAM_BANK_SIZE, gbemu.cart->ram_banks,
-               sst_file);
+        gzfread(gbemu.cart->ram, SRAM_BANK_SIZE, gbemu.cart->ram_banks,
+                sst_file);
     if (gbemu.cart->has_rtc)
-        fread(gbemu.cart->rtc, sizeof *gbemu.cart->rtc, 1, sst_file);
+        gzfread(gbemu.cart->rtc, sizeof *gbemu.cart->rtc, 1, sst_file);
 
-    fclose(sst_file);
+    gzclose(sst_file);
 
-    draw_screen();
+    update_texture();
 }

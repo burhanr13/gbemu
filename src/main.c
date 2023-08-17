@@ -42,37 +42,34 @@ int main(int argc, char** argv) {
         }
 
         if (!gbemu.paused) {
-            emu_run_frame(gbemu.frame % gbemu.speed == 0, !gbemu.muted);
-
-            SDL_RenderClear(gbemu.main_renderer);
-            int windowW, windowH;
-            SDL_GetWindowSize(gbemu.main_window, &windowW, &windowH);
-            SDL_Rect dst;
-            if (windowW > windowH) {
-                dst.h = windowH;
-                dst.y = 0;
-                dst.w = dst.h * GB_SCREEN_W / GB_SCREEN_H;
-                dst.x = (windowW - dst.w) / 2;
-            } else {
-                dst.w = windowW;
-                dst.x = 0;
-                dst.h = dst.w * GB_SCREEN_H / GB_SCREEN_W;
-                dst.y = (windowH - dst.h) / 2;
+            for (int i = 0; i < gbemu.speed - 1; i++) {
+                emu_run_frame(false, !gbemu.muted);
             }
+            emu_run_frame(true, !gbemu.muted);
+        }
 
-            if (gbemu.frame % gbemu.speed == 0) {
-                SDL_RenderCopy(gbemu.main_renderer, gbemu.gb_screen, NULL,
-                               &dst);
-                SDL_RenderPresent(gbemu.main_renderer);
+        SDL_RenderClear(gbemu.main_renderer);
+        int windowW, windowH;
+        SDL_GetWindowSize(gbemu.main_window, &windowW, &windowH);
+        SDL_Rect dst;
+        if (windowW > windowH) {
+            dst.h = windowH;
+            dst.y = 0;
+            dst.w = dst.h * GB_SCREEN_W / GB_SCREEN_H;
+            dst.x = (windowW - dst.w) / 2;
+        } else {
+            dst.w = windowW;
+            dst.x = 0;
+            dst.h = dst.w * GB_SCREEN_H / GB_SCREEN_W;
+            dst.y = (windowH - dst.h) / 2;
+        }
 
-                if (!gbemu.muted && gbemu.gb->io[NR52]) {
-                    while (SDL_GetQueuedAudioSize(gbemu.gb_audio) >
-                           8 * SAMPLE_BUF_LEN)
-                        SDL_Delay(1);
-                } else {
-                    SDL_Delay(10);
-                }
-            }
+        SDL_RenderCopy(gbemu.main_renderer, gbemu.gb_screen, NULL, &dst);
+        SDL_RenderPresent(gbemu.main_renderer);
+
+        if (!gbemu.paused && !gbemu.muted && gbemu.gb->io[NR52]) {
+            while (SDL_GetQueuedAudioSize(gbemu.gb_audio) > 8 * SAMPLE_BUF_LEN)
+                SDL_Delay(1);
         } else {
             SDL_Delay(10);
         }
