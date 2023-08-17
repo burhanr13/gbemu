@@ -14,11 +14,11 @@ An emulator for the Game Boy and Game Boy Color. Most games should be playable w
 - fast forward
 - Game Boy Color support
 - real time clock for MBC3
+- save states
 
 ### Todo:
 - other MBCs
 - configuration
-- save states
 - cycle accuracy
 - serial communication
 - super game boy palettes
@@ -50,3 +50,5 @@ Hotkeys:
 - Pause : P
 - Mute : M
 - Toggle Fast forward : Tab
+- Save State : 9
+- Load State : 0

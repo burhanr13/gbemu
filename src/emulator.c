@@ -197,6 +197,11 @@ void save_state() {
 
 void load_state() {
     FILE* sst_file = fopen(gbemu.cart->sst_filename, "rb");
+    if(!sst_file){
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "gbemu",
+                                 "No Save State!", gbemu.main_window);
+        return;
+    }
 
     u8 title[0x10];
     fread(title, sizeof gbemu.cart->title, 1, sst_file);
