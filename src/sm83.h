@@ -51,6 +51,11 @@ struct sm83 {
 
 void cpu_clock(struct sm83* cpu);
 
+u8 cpu_read8(struct sm83* cpu, u16 addr);
+void cpu_write8(struct sm83* cpu, u16 addr, u8 data);
+u16 cpu_read16(struct sm83* cpu, u16 addr);
+void cpu_write16(struct sm83* cpu, u16 addr, u16 data);
+
 void print_cpu_state(struct sm83* cpu);
 
 #endif

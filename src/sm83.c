@@ -107,7 +107,7 @@ static inline u8 getr8src(struct sm83* cpu, u8 opcode) {
         case 5:
             return cpu->L;
         case 6:
-            return read8(cpu->master, cpu->HL);
+            return cpu_read8(cpu, cpu->HL);
         case 7:
             return cpu->A;
     }
@@ -179,17 +179,17 @@ static void run_alu(struct sm83* cpu, u8 opcode, u8 op2) {
 
 static inline void push(struct sm83* cpu, u16 val) {
     cpu->SP -= 2;
-    write16(cpu->master, cpu->SP, val);
+    cpu_write16(cpu, cpu->SP, val);
 }
 
 static inline u16 pop(struct sm83* cpu) {
-    u16 val = read16(cpu->master, cpu->SP);
+    u16 val = cpu_read16(cpu, cpu->SP);
     cpu->SP += 2;
     return val;
 }
 
 void run_instruction(struct sm83* cpu) {
-    u8 opcode = read8(cpu->master, cpu->PC++);
+    u8 opcode = cpu_read8(cpu, cpu->PC++);
     switch ((opcode & 0b11000000) >> 6) {
         case 0:
             if ((opcode & 0b00000111) == 0) {
@@ -198,9 +198,9 @@ void run_instruction(struct sm83* cpu) {
                         case 0: // NOP
                             break;
                         case 1: // LD (nn), SP
-                            u16 addr = read16(cpu->master, cpu->PC++);
+                            u16 addr = cpu_read16(cpu, cpu->PC++);
                             cpu->PC++;
-                            write16(cpu->master, addr, cpu->SP);
+                            cpu_write16(cpu, addr, cpu->SP);
                             break;
                         case 2: // STOP
                             cpu->master->div = 0x0000;
@@ -212,13 +212,13 @@ void run_instruction(struct sm83* cpu) {
                             }
                             break;
                         case 3: // JR d
-                            s8 disp = read8(cpu->master, cpu->PC++);
+                            s8 disp = cpu_read8(cpu, cpu->PC++);
                             gb_m_cycle(cpu->master);
                             cpu->PC += disp;
                             break;
                     }
                 } else { // JR cc, d
-                    s8 disp = read8(cpu->master, cpu->PC++);
+                    s8 disp = cpu_read8(cpu, cpu->PC++);
                     if (eval_cond(cpu, opcode)) {
                         gb_m_cycle(cpu->master);
                         cpu->PC += disp;
@@ -228,7 +228,7 @@ void run_instruction(struct sm83* cpu) {
                 if ((opcode & 0b00000100) == 0) {
                     switch (opcode & 0x0F) {
                         case 0b0001: // LD rr, nn
-                            u16 nn = read16(cpu->master, cpu->PC++);
+                            u16 nn = cpu_read16(cpu, cpu->PC++);
                             cpu->PC++;
                             *getr16mod(cpu, opcode) = nn;
                             break;
@@ -240,12 +240,10 @@ void run_instruction(struct sm83* cpu) {
                                           (prev & 0x00ff) > cpu->L);
                             break;
                         case 0b0010: // LD (rr), A
-                            write8(cpu->master, getr16addr(cpu, opcode),
-                                   cpu->A);
+                            cpu_write8(cpu, getr16addr(cpu, opcode), cpu->A);
                             break;
                         case 0b1010: // LD A, (rr)
-                            cpu->A =
-                                read8(cpu->master, getr16addr(cpu, opcode));
+                            cpu->A = cpu_read8(cpu, getr16addr(cpu, opcode));
                             break;
                         case 0b0011: // INC rr
                             gb_m_cycle(cpu->master);
@@ -267,9 +265,9 @@ void run_instruction(struct sm83* cpu) {
                                 (*r)++;
                                 post = *r;
                             } else {
-                                pre = read8(cpu->master, cpu->HL);
+                                pre = cpu_read8(cpu, cpu->HL);
                                 post = pre + 1;
-                                write8(cpu->master, cpu->HL, post);
+                                cpu_write8(cpu, cpu->HL, post);
                             }
                             resolve_flags(cpu, FZ | FH, pre, post, 0);
                             break;
@@ -279,18 +277,18 @@ void run_instruction(struct sm83* cpu) {
                                 (*r)--;
                                 post = *r;
                             } else {
-                                pre = read8(cpu->master, cpu->HL);
+                                pre = cpu_read8(cpu, cpu->HL);
                                 post = pre - 1;
-                                write8(cpu->master, cpu->HL, post);
+                                cpu_write8(cpu, cpu->HL, post);
                             }
                             resolve_flags(cpu, FZ | FN | FH, pre, post, 0);
                             break;
                         case 2: // LD r, n
-                            u8 n = read8(cpu->master, cpu->PC++);
+                            u8 n = cpu_read8(cpu, cpu->PC++);
                             if ((r = getr8dest(cpu, opcode))) {
                                 *r = n;
                             } else {
-                                write8(cpu->master, cpu->HL, n);
+                                cpu_write8(cpu, cpu->HL, n);
                             }
                             break;
                         case 3:
@@ -372,7 +370,7 @@ void run_instruction(struct sm83* cpu) {
                 if (r) {
                     *r = getr8src(cpu, opcode);
                 } else {
-                    write8(cpu->master, cpu->HL, getr8src(cpu, opcode));
+                    cpu_write8(cpu, cpu->HL, getr8src(cpu, opcode));
                 }
             }
             break;
@@ -392,12 +390,12 @@ void run_instruction(struct sm83* cpu) {
                         s8 disp;
                         switch ((opcode & 0b00011000) >> 3) {
                             case 0: // LD (FF00+n), A
-                                write8(cpu->master,
-                                       0xff00 + read8(cpu->master, cpu->PC++),
-                                       cpu->A);
+                                cpu_write8(cpu,
+                                           0xff00 + cpu_read8(cpu, cpu->PC++),
+                                           cpu->A);
                                 break;
                             case 1: // ADD SP, d
-                                disp = read8(cpu->master, cpu->PC++);
+                                disp = cpu_read8(cpu, cpu->PC++);
                                 u16 pre = cpu->SP;
                                 gb_m_cycle(cpu->master);
                                 gb_m_cycle(cpu->master);
@@ -407,11 +405,11 @@ void run_instruction(struct sm83* cpu) {
                                               cpu->SP & 0x00ff, 0);
                                 break;
                             case 2: // LD A, (FF00+n)
-                                u8 num = read8(cpu->master, cpu->PC++);
-                                cpu->A = read8(cpu->master, 0xff00 + num);
+                                u8 num = cpu_read8(cpu, cpu->PC++);
+                                cpu->A = cpu_read8(cpu, 0xff00 + num);
                                 break;
                             case 3: // LD HL, SP+d
-                                disp = read8(cpu->master, cpu->PC++);
+                                disp = cpu_read8(cpu, cpu->PC++);
                                 gb_m_cycle(cpu->master);
                                 cpu->HL = cpu->SP + disp;
                                 cpu->F &= ~FZ;
@@ -448,7 +446,7 @@ void run_instruction(struct sm83* cpu) {
                     break;
                 case 2:
                     if ((opcode & 0b00100000) == 0) { // JP cc, nn
-                        u16 addr = read16(cpu->master, cpu->PC++);
+                        u16 addr = cpu_read16(cpu, cpu->PC++);
                         cpu->PC++;
                         if (eval_cond(cpu, opcode)) {
                             gb_m_cycle(cpu->master);
@@ -458,20 +456,20 @@ void run_instruction(struct sm83* cpu) {
                         u16 addr;
                         switch ((opcode & 0b00011000) >> 3) {
                             case 0: // LD (FF00+C), A
-                                write8(cpu->master, 0xff00 + cpu->C, cpu->A);
+                                cpu_write8(cpu, 0xff00 + cpu->C, cpu->A);
                                 break;
                             case 1: // LD (nn), A
-                                addr = read16(cpu->master, cpu->PC++);
+                                addr = cpu_read16(cpu, cpu->PC++);
                                 cpu->PC++;
-                                write8(cpu->master, addr, cpu->A);
+                                cpu_write8(cpu, addr, cpu->A);
                                 break;
                             case 2: // LD A, (FF00+C)
-                                cpu->A = read8(cpu->master, 0xff00 + cpu->C);
+                                cpu->A = cpu_read8(cpu, 0xff00 + cpu->C);
                                 break;
                             case 3: // LD A, (nn)
-                                addr = read16(cpu->master, cpu->PC++);
+                                addr = cpu_read16(cpu, cpu->PC++);
                                 cpu->PC++;
-                                cpu->A = read8(cpu->master, addr);
+                                cpu->A = cpu_read8(cpu, addr);
                                 break;
                         }
                     }
@@ -479,13 +477,13 @@ void run_instruction(struct sm83* cpu) {
                 case 3:
                     switch ((opcode & 0b00111000) >> 3) {
                         case 0: // JP nn
-                            u16 addr = read16(cpu->master, cpu->PC++);
+                            u16 addr = cpu_read16(cpu, cpu->PC++);
                             cpu->PC++;
                             gb_m_cycle(cpu->master);
                             cpu->PC = addr;
                             break;
                         case 1: // prefix
-                            u8 cbcode = read8(cpu->master, cpu->PC++);
+                            u8 cbcode = cpu_read8(cpu, cpu->PC++);
                             u8 val = getr8src(cpu, cbcode);
                             u8* dest = getr8dest(cpu, cbcode << 3);
                             u8 bit = (cbcode & 0b00111000) >> 3;
@@ -550,7 +548,7 @@ void run_instruction(struct sm83* cpu) {
                             }
                             if (store) {
                                 if (dest) *dest = val;
-                                else write8(cpu->master, cpu->HL, val);
+                                else cpu_write8(cpu, cpu->HL, val);
                             }
                             break;
                         case 6: // DI
@@ -565,7 +563,7 @@ void run_instruction(struct sm83* cpu) {
                     }
                     break;
                 case 4: // CALL cc, nn
-                    u16 addr = read16(cpu->master, cpu->PC++);
+                    u16 addr = cpu_read16(cpu, cpu->PC++);
                     cpu->PC++;
                     if (eval_cond(cpu, opcode)) {
                         push(cpu, cpu->PC);
@@ -578,7 +576,7 @@ void run_instruction(struct sm83* cpu) {
                         gb_m_cycle(cpu->master);
                         push(cpu, *getr16stack(cpu, opcode));
                     } else { // CALL nn
-                        u16 addr = read16(cpu->master, cpu->PC++);
+                        u16 addr = cpu_read16(cpu, cpu->PC++);
                         cpu->PC++;
                         push(cpu, cpu->PC);
                         gb_m_cycle(cpu->master);
@@ -586,7 +584,7 @@ void run_instruction(struct sm83* cpu) {
                     }
                     break;
                 case 6: // ALU n
-                    run_alu(cpu, opcode, read8(cpu->master, cpu->PC++));
+                    run_alu(cpu, opcode, cpu_read8(cpu, cpu->PC++));
                     break;
                 case 7: // RST n
                     push(cpu, cpu->PC);
@@ -633,10 +631,51 @@ void cpu_clock(struct sm83* cpu) {
     }
 }
 
+u8 cpu_read8(struct sm83* cpu, u16 addr) {
+    gb_m_cycle(cpu->master);
+
+    if (cpu->master->dma_active && addr < 0xff00) return 0xff;
+    if (0x8000 <= addr && addr < 0xa000 && 
+        (cpu->master->io[LCDC] & LCDC_ENABLE) &&
+        (cpu->master->io[STAT] & STAT_MODE) == 3)
+        return 0xff;
+    if (0xfe00 <= addr && addr < 0xfea0 &&
+        (cpu->master->io[LCDC] & LCDC_ENABLE) &&
+        (cpu->master->io[STAT] & STAT_MODE) >= 2)
+        return 0xff;
+
+    return read8(cpu->master, addr);
+}
+
+void cpu_write8(struct sm83* cpu, u16 addr, u8 data) {
+    gb_m_cycle(cpu->master);
+
+    if (cpu->master->dma_active && addr < 0xff00) return;
+    if (0x8000 <= addr && addr < 0xa000 &&
+        (cpu->master->io[LCDC] & LCDC_ENABLE) &&
+        (cpu->master->io[STAT] & STAT_MODE) == 3)
+        return;
+    if (0xfe00 <= addr && addr < 0xfea0 &&
+        (cpu->master->io[LCDC] & LCDC_ENABLE) &&
+        (cpu->master->io[STAT] & STAT_MODE) >= 2)
+        return;
+
+    write8(cpu->master, addr, data);
+}
+
+u16 cpu_read16(struct sm83* cpu, u16 addr) {
+    return cpu_read8(cpu, addr) | ((u16) cpu_read8(cpu, addr + 1) << 8);
+}
+
+void cpu_write16(struct sm83* cpu, u16 addr, u16 data) {
+    cpu_write8(cpu, addr, data);
+    cpu_write8(cpu, addr + 1, data >> 8);
+}
+
 void print_cpu_state(struct sm83* cpu) {
     fprintf(stderr,
             "A: %02X F: %02X B: %02X C: %02X D: %02X E: %02X H: %02X "
-            "L: %02X SP: %04X PC: 00:%04X (%02X %02X %02X %02X)\n",
+            "L: %02X SP: %04X PC: %04X (%02X %02X %02X %02X)\n",
             cpu->A, cpu->F, cpu->B, cpu->C, cpu->D, cpu->E, cpu->H, cpu->L,
             cpu->SP, cpu->PC, read8(cpu->master, cpu->PC),
             read8(cpu->master, cpu->PC + 1), read8(cpu->master, cpu->PC + 2),

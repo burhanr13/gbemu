@@ -9,10 +9,6 @@
 #include "emulator.h"
 
 u8 read8(struct gb* bus, u16 addr) {
-    gb_m_cycle(bus);
-
-    if (bus->dma_active && addr < 0xff00) return 0xff;
-
     if (addr < 0x4000) {
         return cart_read(bus->cart, addr, CART_ROM0);
     }
@@ -20,12 +16,7 @@ u8 read8(struct gb* bus, u16 addr) {
         return cart_read(bus->cart, addr & 0x3fff, CART_ROM1);
     }
     if (addr < 0xa000) {
-        if (!(bus->io[LCDC] & LCDC_ENABLE) ||
-            (bus->io[STAT] & STAT_MODE) != 3) {
-            return bus->vram[bus->io[VBK] & 1][addr & 0x1fff];
-        } else {
-            return 0xff;
-        }
+        return bus->vram[bus->io[VBK] & 1][addr & 0x1fff];
     }
     if (addr < 0xc000) {
         return cart_read(bus->cart, addr & 0x1fff, CART_RAM);
@@ -45,11 +36,7 @@ u8 read8(struct gb* bus, u16 addr) {
         return bus->wram[bank ? bank : 1][addr & 0x0fff];
     }
     if (addr < 0xfea0) {
-        if (!(bus->io[LCDC] & LCDC_ENABLE) || (bus->io[STAT] & STAT_MODE) < 2) {
-            return bus->oam[addr - 0xfe00];
-        } else {
-            return 0xff;
-        }
+        return bus->oam[addr - 0xfe00];
     }
     if (addr < 0xff00) {
         return 0xff;
@@ -87,10 +74,6 @@ u8 read8(struct gb* bus, u16 addr) {
 }
 
 void write8(struct gb* bus, u16 addr, u8 data) {
-    gb_m_cycle(bus);
-
-    if (bus->dma_active && addr < 0xff00) return;
-
     if (addr < 0x4000) {
         cart_write(bus->cart, addr, CART_ROM0, data);
         return;
@@ -100,10 +83,7 @@ void write8(struct gb* bus, u16 addr, u8 data) {
         return;
     }
     if (addr < 0xa000) {
-        if (!(bus->io[LCDC] & LCDC_ENABLE) ||
-            (bus->io[STAT] & STAT_MODE) != 3) {
-            bus->vram[bus->io[VBK] & 1][addr & 0x1fff] = data;
-        }
+        bus->vram[bus->io[VBK] & 1][addr & 0x1fff] = data;
         return;
     }
     if (addr < 0xc000) {
@@ -129,9 +109,7 @@ void write8(struct gb* bus, u16 addr, u8 data) {
         return;
     }
     if (addr < 0xfea0) {
-        if (!(bus->io[LCDC] & LCDC_ENABLE) || (bus->io[STAT] & STAT_MODE) < 2) {
-            bus->oam[addr - 0xfe00] = data;
-        }
+        bus->oam[addr - 0xfe00] = data;
         return;
     }
     if (addr < 0xff00) {
@@ -394,15 +372,6 @@ void write8(struct gb* bus, u16 addr, u8 data) {
     if (addr == 0xffff) bus->IE = data & 0b00011111;
 }
 
-u16 read16(struct gb* bus, u16 addr) {
-    return read8(bus, addr) | ((u16) read8(bus, addr + 1) << 8);
-}
-
-void write16(struct gb* bus, u16 addr, u16 data) {
-    write8(bus, addr, data);
-    write8(bus, addr + 1, data >> 8);
-}
-
 void tick_gb(struct gb* gb) {
     check_stat_irq(gb);
     clock_timers(gb);
@@ -481,23 +450,8 @@ void run_dma(struct gb* gb) {
         }
         gb->dma_cycles += 4;
         u16 addr = gb->io[DMA] << 8 | gb->dma_index;
-        u8 data;
-        if (addr < 0x4000) {
-            data = cart_read(gb->cart, addr & 0x3fff, CART_ROM0);
-        } else if (addr < 0x8000) {
-            data = cart_read(gb->cart, addr & 0x3fff, CART_ROM1);
-        } else if (addr < 0xa000) {
-            data = gb->vram[gb->io[VBK] & 1][addr & 0x1fff];
-        } else if (addr < 0xc000) {
-            data = cart_read(gb->cart, addr & 0x1fff, CART_RAM);
-        } else if (addr < 0xd000) {
-            data = gb->wram[0][addr & 0x0fff];
-        } else if (addr < 0xe000) {
-            u8 bank = gb->io[SVBK];
-            data = gb->wram[bank ? bank : 1][addr & 0x0fff];
-        } else {
-            data = 0xff;
-        }
+        u8 data = 0xff;
+        if (addr < 0xff00) data = read8(gb, addr);
         gb->oam[gb->dma_index++] = data;
     }
     gb->dma_cycles--;
@@ -514,23 +468,9 @@ void run_hdma(struct gb* gb) {
             gb->hdma_cycles += 2;
             u16 addr =
                 gb->hdma_src + 0x10 * gb->hdma_block + (0x10 - gb->hdma_index);
-            u8 data;
-            if (addr < 0x4000) {
-                data = cart_read(gb->cart, addr & 0x3fff, CART_ROM0);
-            } else if (addr < 0x8000) {
-                data = cart_read(gb->cart, addr & 0x3fff, CART_ROM1);
-            } else if (addr < 0xa000) {
-                data = 0xff;
-            } else if (addr < 0xc000) {
-                data = cart_read(gb->cart, addr & 0x1fff, CART_RAM);
-            } else if (addr < 0xd000) {
-                data = gb->wram[0][addr & 0x0fff];
-            } else if (addr < 0xe000) {
-                u8 bank = gb->io[SVBK];
-                data = gb->wram[bank ? bank : 1][addr & 0x0fff];
-            } else {
-                data = 0xff;
-            }
+            u8 data = 0xff;
+            if(addr < 0xff00 && !(0x8000 <= addr && addr < 0xa000))
+                data = read8(gb, addr);
 
             u16 dest =
                 gb->hdma_dest + 0x10 * gb->hdma_block + (0x10 - gb->hdma_index);

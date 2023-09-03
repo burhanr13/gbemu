@@ -144,9 +144,7 @@ struct gb {
 };
 
 u8 read8(struct gb* bus, u16 addr);
-u16 read16(struct gb* bus, u16 addr);
 void write8(struct gb* bus, u16 addr, u8 data);
-void write16(struct gb* bus, u16 addr, u16 data);
 
 void gb_handle_event(struct gb* gb, SDL_Event* e);
 
