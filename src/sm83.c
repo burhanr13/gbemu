@@ -6,7 +6,7 @@
 
 #include "gb.h"
 
-static inline void set_flag(struct sm83* cpu, int flag, int val) {
+static void set_flag(struct sm83* cpu, int flag, int val) {
     if (val) {
         cpu->F |= flag;
     } else {
@@ -36,7 +36,7 @@ static void resolve_flags(struct sm83* cpu, int flags, u8 pre, u8 post,
     }
 }
 
-static inline int eval_cond(struct sm83* cpu, u8 opcode) {
+static int eval_cond(struct sm83* cpu, u8 opcode) {
     switch ((opcode & 0b00011000) >> 3) {
         case 0: // NZ
             return !(cpu->F & FZ);
@@ -50,7 +50,7 @@ static inline int eval_cond(struct sm83* cpu, u8 opcode) {
     return 0;
 }
 
-static inline u16* getr16mod(struct sm83* cpu, u8 opcode) {
+static u16* getr16mod(struct sm83* cpu, u8 opcode) {
     switch ((opcode & 0b00110000) >> 4) {
         case 0:
             return &cpu->BC;
@@ -64,7 +64,7 @@ static inline u16* getr16mod(struct sm83* cpu, u8 opcode) {
     return NULL;
 }
 
-static inline u16* getr16stack(struct sm83* cpu, u8 opcode) {
+static u16* getr16stack(struct sm83* cpu, u8 opcode) {
     switch ((opcode & 0b00110000) >> 4) {
         case 0:
             return &cpu->BC;
@@ -78,7 +78,7 @@ static inline u16* getr16stack(struct sm83* cpu, u8 opcode) {
     return NULL;
 }
 
-static inline u16 getr16addr(struct sm83* cpu, u8 opcode) {
+static u16 getr16addr(struct sm83* cpu, u8 opcode) {
     switch ((opcode & 0b00110000) >> 4) {
         case 0:
             return cpu->BC;
@@ -92,7 +92,7 @@ static inline u16 getr16addr(struct sm83* cpu, u8 opcode) {
     return 0;
 }
 
-static inline u8 getr8src(struct sm83* cpu, u8 opcode) {
+static u8 getr8src(struct sm83* cpu, u8 opcode) {
     switch (opcode & 0b00000111) {
         case 0:
             return cpu->B;
@@ -114,7 +114,7 @@ static inline u8 getr8src(struct sm83* cpu, u8 opcode) {
     return 0;
 }
 
-static inline u8* getr8dest(struct sm83* cpu, u8 opcode) {
+static u8* getr8dest(struct sm83* cpu, u8 opcode) {
     switch ((opcode & 0b00111000) >> 3) {
         case 0:
             return &cpu->B;
@@ -177,15 +177,15 @@ static void run_alu(struct sm83* cpu, u8 opcode, u8 op2) {
     }
 }
 
-static inline void push(struct sm83* cpu, u16 val) {
-    cpu->SP -= 2;
-    cpu_write16(cpu, cpu->SP, val);
+static void push(struct sm83* cpu, u16 val) {
+    cpu_write8(cpu, --cpu->SP, val >> 8);
+    cpu_write8(cpu, --cpu->SP, val);
 }
 
-static inline u16 pop(struct sm83* cpu) {
-    u16 val = cpu_read16(cpu, cpu->SP);
-    cpu->SP += 2;
-    return val;
+static u16 pop(struct sm83* cpu) {
+    u8 lo = cpu_read8(cpu, cpu->SP++);
+    u8 hi = cpu_read8(cpu, cpu->SP++);
+    return lo | (hi << 8);
 }
 
 void run_instruction(struct sm83* cpu) {
@@ -383,8 +383,8 @@ void run_instruction(struct sm83* cpu) {
                     if ((opcode & 0b00100000) == 0) { // RET cc
                         gb_m_cycle(cpu->master);
                         if (eval_cond(cpu, opcode)) {
-                            gb_m_cycle(cpu->master);
                             cpu->PC = pop(cpu);
+                            gb_m_cycle(cpu->master);
                         }
                     } else {
                         s8 disp;
@@ -426,12 +426,12 @@ void run_instruction(struct sm83* cpu) {
                     } else {
                         switch ((opcode & 0b00110000) >> 4) {
                             case 0: // RET
-                                gb_m_cycle(cpu->master);
                                 cpu->PC = pop(cpu);
+                                gb_m_cycle(cpu->master);
                                 break;
                             case 1: // RETI
-                                gb_m_cycle(cpu->master);
                                 cpu->PC = pop(cpu);
+                                gb_m_cycle(cpu->master);
                                 cpu->IME = true;
                                 break;
                             case 2: // JP HL
@@ -566,8 +566,8 @@ void run_instruction(struct sm83* cpu) {
                     u16 addr = cpu_read16(cpu, cpu->PC++);
                     cpu->PC++;
                     if (eval_cond(cpu, opcode)) {
-                        push(cpu, cpu->PC);
                         gb_m_cycle(cpu->master);
+                        push(cpu, cpu->PC);
                         cpu->PC = addr;
                     }
                     break;
@@ -578,8 +578,8 @@ void run_instruction(struct sm83* cpu) {
                     } else { // CALL nn
                         u16 addr = cpu_read16(cpu, cpu->PC++);
                         cpu->PC++;
-                        push(cpu, cpu->PC);
                         gb_m_cycle(cpu->master);
+                        push(cpu, cpu->PC);
                         cpu->PC = addr;
                     }
                     break;
@@ -587,12 +587,35 @@ void run_instruction(struct sm83* cpu) {
                     run_alu(cpu, opcode, cpu_read8(cpu, cpu->PC++));
                     break;
                 case 7: // RST n
-                    push(cpu, cpu->PC);
                     gb_m_cycle(cpu->master);
+                    push(cpu, cpu->PC);
                     cpu->PC = opcode & 0b00111000;
                     break;
             }
             break;
+    }
+}
+
+void cpu_isr(struct sm83* cpu) {
+    cpu->halt = false;
+    if (cpu->master->io[IF] & I_JOYPAD) cpu->stop = false;
+    if (cpu->IME) {
+        gb_m_cycle(cpu->master);
+        gb_m_cycle(cpu->master);
+        cpu->IME = false;
+        cpu_write8(cpu, --cpu->SP, cpu->PC >> 8);
+        int i;
+        for (i = 0; i < 5; i++) {
+            if ((cpu->master->IE & cpu->master->io[IF]) & (1 << i)) break;
+        }
+        cpu_write8(cpu, --cpu->SP, cpu->PC);
+        gb_m_cycle(cpu->master);
+        if (i < 5) {
+            cpu->master->io[IF] &= ~(1 << i);
+            cpu->PC = 0b01000000 | (i << 3);
+        } else {
+            cpu->PC = 0x0000;
+        }
     }
 }
 
@@ -603,23 +626,7 @@ void cpu_clock(struct sm83* cpu) {
         gb_m_cycle(cpu->master);
         return;
     }
-    if (cpu->master->IE & cpu->master->io[IF]) {
-        cpu->halt = false;
-        if (cpu->master->io[IF] & I_JOYPAD) cpu->stop = false;
-        if (cpu->IME) {
-            gb_m_cycle(cpu->master);
-            gb_m_cycle(cpu->master);
-            cpu->IME = false;
-            int i;
-            for (i = 0; i < 5; i++) {
-                if ((cpu->master->IE & cpu->master->io[IF]) & (1 << i)) break;
-            }
-            cpu->master->io[IF] &= ~(1 << i);
-            push(cpu, cpu->PC);
-            gb_m_cycle(cpu->master);
-            cpu->PC = 0b01000000 | (i << 3);
-        }
-    }
+    if (cpu->master->IE & cpu->master->io[IF] & 0b00011111) cpu_isr(cpu);
     if (cpu->ei) {
         cpu->IME = true;
         cpu->ei = false;
@@ -665,12 +672,14 @@ void cpu_write8(struct sm83* cpu, u16 addr, u8 data) {
 }
 
 u16 cpu_read16(struct sm83* cpu, u16 addr) {
-    return cpu_read8(cpu, addr) | ((u16) cpu_read8(cpu, addr + 1) << 8);
+    u8 lo = cpu_read8(cpu, addr++);
+    u8 hi = cpu_read8(cpu, addr++);
+    return lo | (hi << 8);
 }
 
 void cpu_write16(struct sm83* cpu, u16 addr, u16 data) {
-    cpu_write8(cpu, addr, data);
-    cpu_write8(cpu, addr + 1, data >> 8);
+    cpu_write8(cpu, addr++, data);
+    cpu_write8(cpu, addr++, data >> 8);
 }
 
 void print_cpu_state(struct sm83* cpu) {

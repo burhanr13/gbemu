@@ -130,7 +130,7 @@ struct gb {
     u8 jp_dir;
     u8 jp_action;
 
-    bool dma_start;
+    int dma_start;
     bool dma_active;
     u8 dma_index;
 

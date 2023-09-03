@@ -138,7 +138,7 @@ void write8(struct gb* bus, u16 addr, u8 data) {
                 bus->io[TAC] = data & 0b0111;
                 break;
             case IF:
-                bus->io[IF] = data & 0b00011111;
+                bus->io[IF] = (data & 0b00011111) | 0b11100000;
                 break;
             case NR10:
                 if ((data & NR10_PACE) == 0) bus->apu.ch1_sweep_pace = 0;
@@ -268,7 +268,7 @@ void write8(struct gb* bus, u16 addr, u8 data) {
                 break;
             case DMA:
                 bus->io[DMA] = data;
-                bus->dma_start = true;
+                bus->dma_start = 1;
                 break;
             case BGP:
                 bus->io[BGP] = data;
@@ -368,7 +368,7 @@ void write8(struct gb* bus, u16 addr, u8 data) {
         bus->hram[addr - 0xff80] = data;
         return;
     }
-    if (addr == 0xffff) bus->IE = data & 0b00011111;
+    if (addr == 0xffff) bus->IE = (data & 0b00011111) | 0b11100000;
 }
 
 void gb_m_cycle(struct gb* gb) {
@@ -385,12 +385,13 @@ void gb_m_cycle(struct gb* gb) {
             run_hdma(gb);
         }
     }
-    if (gb->dma_active) run_dma(gb);
-    if (gb->dma_start) {
+    if (gb->dma_start == 1) gb->dma_start++;
+    else if(gb->dma_start == 2) {
+        gb->dma_start = 0;
         gb->dma_active = true;
         gb->dma_index = 0;
-        gb->dma_start = false;
     }
+    if (gb->dma_active) run_dma(gb);
 }
 
 void check_stat_irq(struct gb* gb) {
@@ -501,6 +502,8 @@ void reset_gb(struct gb* gb, struct cartridge* cart) {
     gb->cpu.SP = 0xfffe;
     gb->cpu.PC = 0x0100;
 
+    gb->io[IF] = 0xe0;
+    gb->IE = 0xe0;
     gb->io[LCDC] |= LCDC_ENABLE;
 }
 
