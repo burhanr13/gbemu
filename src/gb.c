@@ -385,10 +385,7 @@ void tick_gb(struct gb* gb) {
 }
 
 void gb_m_cycle(struct gb* gb) {
-    tick_gb(gb);
-    tick_gb(gb);
-    if(!(gb->io[KEY1] & (1<<7))){
-        tick_gb(gb);
+    for (int i = 0; i < 4;i++){
         tick_gb(gb);
     }
 }
