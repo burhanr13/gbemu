@@ -122,7 +122,7 @@ void emu_run_frame(bool video, bool audio) {
                         gbemu.gb_audio,
                         gbemu.gb->apu
                             .sample_buf[(gbemu.gb->apu.buf_ind - 1) % 2],
-                        sizeof gbemu.gb->apu.sample_buf);
+                        sizeof gbemu.gb->apu.sample_buf[0]);
                 gbemu.gb->apu.samples_full = false;
             }
             if (gbemu.gb->io[LCDC] & LCDC_ENABLE) break;
@@ -137,7 +137,7 @@ void emu_run_frame(bool video, bool audio) {
                 SDL_QueueAudio(
                     gbemu.gb_audio,
                     gbemu.gb->apu.sample_buf[(gbemu.gb->apu.buf_ind - 1) % 2],
-                    sizeof gbemu.gb->apu.sample_buf);
+                    sizeof gbemu.gb->apu.sample_buf[0]);
             gbemu.gb->apu.samples_full = false;
         }
         if (!(gbemu.gb->io[LCDC] & LCDC_ENABLE)) break;
