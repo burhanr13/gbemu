@@ -9,7 +9,8 @@
 #include "emulator.h"
 
 u8 read8(struct gb* bus, u16 addr) {
-    bus->cpu.cycles += 4;
+    gb_m_cycle(bus);
+
     if (bus->dma_active && addr < 0xff00) return 0xff;
 
     if (addr < 0x4000) {
@@ -86,7 +87,8 @@ u8 read8(struct gb* bus, u16 addr) {
 }
 
 void write8(struct gb* bus, u16 addr, u8 data) {
-    bus->cpu.cycles += 4;
+    gb_m_cycle(bus);
+
     if (bus->dma_active && addr < 0xff00) return;
 
     if (addr < 0x4000) {
@@ -411,7 +413,15 @@ void tick_gb(struct gb* gb) {
         if (gb->hdma_active) run_hdma(gb);
         apu_clock(&gb->apu);
     }
-    cpu_clock(&gb->cpu);
+}
+
+void gb_m_cycle(struct gb* gb) {
+    tick_gb(gb);
+    tick_gb(gb);
+    if(!(gb->io[KEY1] & (1<<7))){
+        tick_gb(gb);
+        tick_gb(gb);
+    }
 }
 
 void check_stat_irq(struct gb* gb) {

@@ -18,7 +18,6 @@ struct emulator {
     struct gb* gb;
     struct cartridge* cart;
 
-    unsigned long cycle;
     unsigned long frame;
 
     bool paused;

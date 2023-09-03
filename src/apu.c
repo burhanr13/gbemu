@@ -54,7 +54,7 @@ void apu_clock(struct gb_apu* apu) {
                             (apu->ch3_enable ? 0b0100 : 0) |
                             (apu->ch4_enable ? 0b1000 : 0);
 
-    if (gbemu.cycle % gbemu.speed == 0) {
+    if (apu->master->div % gbemu.speed == 0) {
         apu->global_counter++;
 
         if (apu->global_counter % 2 == 0) {
@@ -114,15 +114,16 @@ void apu_clock(struct gb_apu* apu) {
             if (apu->master->io[NR51] & (1 << 6)) l_sample += ch3_sample;
             if (apu->master->io[NR51] & (1 << 7)) l_sample += ch4_sample;
 
-            apu->sample_buf[apu->sample_ind++] =
+            apu->sample_buf[apu->buf_ind%2][apu->sample_ind++] =
                 (float) l_sample / 500 *
                 (((apu->master->io[NR50] & 0b01110000) >> 4) + 1);
-            apu->sample_buf[apu->sample_ind++] =
+            apu->sample_buf[apu->buf_ind%2][apu->sample_ind++] =
                 (float) r_sample / 500 *
                 ((apu->master->io[NR50] & 0b00000111) + 1);
             if (apu->sample_ind == SAMPLE_BUF_LEN) {
                 apu->samples_full = true;
                 apu->sample_ind = 0;
+                apu->buf_ind++;
             }
         }
     }

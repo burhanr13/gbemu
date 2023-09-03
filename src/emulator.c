@@ -4,6 +4,7 @@
 #include <zlib.h>
 
 #include "gb.h"
+#include "sm83.h"
 
 struct emulator gbemu;
 
@@ -113,29 +114,32 @@ void update_texture() {
 
 void emu_run_frame(bool video, bool audio) {
     if (!(gbemu.gb->io[LCDC] & LCDC_ENABLE)) {
-        for (int i = 0; i < 70224; i++) {
-            tick_gb(gbemu.gb);
+        for (int i = 0; i < 10000; i++) {
+            cpu_clock(&gbemu.gb->cpu);
             if (gbemu.gb->apu.samples_full) {
                 if (audio)
-                    SDL_QueueAudio(gbemu.gb_audio, gbemu.gb->apu.sample_buf,
-                                   sizeof gbemu.gb->apu.sample_buf);
+                    SDL_QueueAudio(
+                        gbemu.gb_audio,
+                        gbemu.gb->apu
+                            .sample_buf[(gbemu.gb->apu.buf_ind - 1) % 2],
+                        sizeof gbemu.gb->apu.sample_buf);
                 gbemu.gb->apu.samples_full = false;
             }
-            gbemu.cycle++;
             if (gbemu.gb->io[LCDC] & LCDC_ENABLE) break;
         }
         return;
     }
 
     while (!gbemu.gb->ppu.frame_complete) {
-        tick_gb(gbemu.gb);
+        cpu_clock(&gbemu.gb->cpu);
         if (gbemu.gb->apu.samples_full) {
             if (audio)
-                SDL_QueueAudio(gbemu.gb_audio, gbemu.gb->apu.sample_buf,
-                               sizeof gbemu.gb->apu.sample_buf);
+                SDL_QueueAudio(
+                    gbemu.gb_audio,
+                    gbemu.gb->apu.sample_buf[(gbemu.gb->apu.buf_ind - 1) % 2],
+                    sizeof gbemu.gb->apu.sample_buf);
             gbemu.gb->apu.samples_full = false;
         }
-        gbemu.cycle++;
         if (!(gbemu.gb->io[LCDC] & LCDC_ENABLE)) break;
     }
     gbemu.gb->ppu.frame_complete = false;
@@ -158,7 +162,6 @@ bool emu_load_rom(char* filename) {
 
 void emu_reset() {
     reset_gb(gbemu.gb, gbemu.cart);
-    gbemu.cycle = 0;
     gbemu.frame = 0;
     gbemu.paused = false;
 }

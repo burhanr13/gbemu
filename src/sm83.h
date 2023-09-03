@@ -42,7 +42,6 @@ struct sm83 {
     u16 PC;
     bool IME;
 
-    int cycles;
 
     bool ei;
     bool halt;

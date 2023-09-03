@@ -157,6 +157,7 @@ void run_dma(struct gb* gb);
 void run_hdma(struct gb* gb);
 
 void tick_gb(struct gb* gb);
+void gb_m_cycle(struct gb* gb);
 
 void reset_gb(struct gb* gb, struct cartridge* cart);
 
