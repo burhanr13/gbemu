@@ -89,6 +89,8 @@ struct gb_ppu {
     u8 objs[10];
     u8 obj_ct;
 
+    int wait;
+
     int cycle;
     int scanline;
     bool frame_complete;

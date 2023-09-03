@@ -136,6 +136,7 @@ void ppu_clock(struct gb_ppu* ppu) {
                 }
 
                 ppu->screenX = -8;
+                ppu->wait = 4;
                 ppu->obj_ct = 0;
             }
 
@@ -149,6 +150,8 @@ void ppu_clock(struct gb_ppu* ppu) {
                     ppu->objs[ppu->obj_ct++] = 2 * ppu->cycle;
                 }
             }
+        } else if (ppu->wait > 0) {
+            ppu->wait--;
         } else if (ppu->screenX < GB_SCREEN_W) {
             if (ppu->screenX == -8) {
                 ppu->master->io[STAT] &= ~STAT_MODE;
