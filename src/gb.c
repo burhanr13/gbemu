@@ -268,8 +268,7 @@ void write8(struct gb* bus, u16 addr, u8 data) {
                 break;
             case DMA:
                 bus->io[DMA] = data;
-                bus->dma_active = true;
-                bus->dma_index = 0;
+                bus->dma_start = true;
                 break;
             case BGP:
                 bus->io[BGP] = data;
@@ -372,21 +371,25 @@ void write8(struct gb* bus, u16 addr, u8 data) {
     if (addr == 0xffff) bus->IE = data & 0b00011111;
 }
 
-void tick_gb(struct gb* gb) {
-    check_stat_irq(gb);
-    clock_timers(gb);
-    update_joyp(gb);
-    if (gb->dma_active) run_dma(gb);
-    if (!(gb->io[KEY1] & (1 << 7)) || gb->div % 2 == 0) {
-        ppu_clock(&gb->ppu);
-        if (gb->hdma_active) run_hdma(gb);
-        apu_clock(&gb->apu);
-    }
-}
-
 void gb_m_cycle(struct gb* gb) {
-    for (int i = 0; i < 4;i++){
-        tick_gb(gb);
+    for (int i = 0; i < 4; i++) {
+        check_stat_irq(gb);
+        clock_timers(gb);
+        update_joyp(gb);
+        if (!(gb->io[KEY1] & (1 << 7)) || i % 2 == 0) {
+            ppu_clock(&gb->ppu);
+            apu_clock(&gb->apu);
+        }
+        if (gb->hdma_active && i % 2 == 0 &&
+            (!(gb->io[KEY1] & (1 << 7)) || i % 4 == 0)) {
+            run_hdma(gb);
+        }
+    }
+    if (gb->dma_active) run_dma(gb);
+    if (gb->dma_start) {
+        gb->dma_active = true;
+        gb->dma_index = 0;
+        gb->dma_start = false;
     }
 }
 
@@ -440,51 +443,43 @@ void update_joyp(struct gb* gb) {
 }
 
 void run_dma(struct gb* gb) {
-    if (gb->dma_cycles == 0) {
-        if (gb->dma_index == OAM_SIZE) {
-            gb->dma_active = false;
-            return;
-        }
-        gb->dma_cycles += 4;
-        u16 addr = gb->io[DMA] << 8 | gb->dma_index;
-        u8 data = 0xff;
-        if (addr < 0xff00) data = read8(gb, addr);
-        gb->oam[gb->dma_index++] = data;
+    if (gb->dma_index == OAM_SIZE) {
+        gb->dma_active = false;
+        return;
     }
-    gb->dma_cycles--;
+    u16 addr = gb->io[DMA] << 8 | gb->dma_index;
+    u8 data = 0xff;
+    if (addr < 0xff00) data = read8(gb, addr);
+    gb->oam[gb->dma_index++] = data;
 }
 
 void run_hdma(struct gb* gb) {
-    if (gb->hdma_cycles == 0) {
-        if (gb->io[HDMA5] == 0xff) {
-            gb->hdma_active = false;
-            gb->hdma_index = 0;
-            return;
+    if (gb->io[HDMA5] == 0xff) {
+        gb->hdma_active = false;
+        gb->hdma_index = 0;
+        return;
+    }
+    if (gb->hdma_index > 0) {
+        u16 addr =
+            gb->hdma_src + 0x10 * gb->hdma_block + (0x10 - gb->hdma_index);
+        u8 data = 0xff;
+        if (addr < 0xff00 && !(0x8000 <= addr && addr < 0xa000))
+            data = read8(gb, addr);
+
+        u16 dest =
+            gb->hdma_dest + 0x10 * gb->hdma_block + (0x10 - gb->hdma_index);
+        if ((gb->io[STAT] & STAT_MODE) != 3) {
+            gb->vram[gb->io[VBK] & 1][dest & 0x1fff] = data;
         }
-        if (gb->hdma_index > 0) {
-            gb->hdma_cycles += 2;
-            u16 addr =
-                gb->hdma_src + 0x10 * gb->hdma_block + (0x10 - gb->hdma_index);
-            u8 data = 0xff;
-            if(addr < 0xff00 && !(0x8000 <= addr && addr < 0xa000))
-                data = read8(gb, addr);
 
-            u16 dest =
-                gb->hdma_dest + 0x10 * gb->hdma_block + (0x10 - gb->hdma_index);
-            if ((gb->io[STAT] & STAT_MODE) != 3) {
-                gb->vram[gb->io[VBK] & 1][dest & 0x1fff] = data;
-            }
+        gb->hdma_index--;
 
-            gb->hdma_index--;
-
-            if (gb->hdma_index == 0) {
-                gb->hdma_block++;
-                gb->io[HDMA5]--;
-                if (!gb->hdma_hblank) gb->hdma_index = 0x10;
-            }
+        if (gb->hdma_index == 0) {
+            gb->hdma_block++;
+            gb->io[HDMA5]--;
+            if (!gb->hdma_hblank) gb->hdma_index = 0x10;
         }
     }
-    if (gb->hdma_cycles != 0) gb->hdma_cycles--;
 }
 
 void reset_gb(struct gb* gb, struct cartridge* cart) {

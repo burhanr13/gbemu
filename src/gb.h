@@ -130,9 +130,9 @@ struct gb {
     u8 jp_dir;
     u8 jp_action;
 
+    bool dma_start;
     bool dma_active;
     u8 dma_index;
-    int dma_cycles;
 
     u16 hdma_src;
     u16 hdma_dest;
@@ -140,7 +140,6 @@ struct gb {
     bool hdma_hblank;
     u8 hdma_block;
     u8 hdma_index;
-    int hdma_cycles;
 };
 
 u8 read8(struct gb* bus, u16 addr);
@@ -154,7 +153,6 @@ void update_joyp(struct gb* gb);
 void run_dma(struct gb* gb);
 void run_hdma(struct gb* gb);
 
-void tick_gb(struct gb* gb);
 void gb_m_cycle(struct gb* gb);
 
 void reset_gb(struct gb* gb, struct cartridge* cart);

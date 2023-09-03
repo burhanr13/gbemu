@@ -634,14 +634,14 @@ void cpu_clock(struct sm83* cpu) {
 u8 cpu_read8(struct sm83* cpu, u16 addr) {
     gb_m_cycle(cpu->master);
 
-    if (cpu->master->dma_active && addr < 0xff00) return 0xff;
-    if (0x8000 <= addr && addr < 0xa000 && 
+    if (0x8000 <= addr && addr < 0xa000 &&
         (cpu->master->io[LCDC] & LCDC_ENABLE) &&
         (cpu->master->io[STAT] & STAT_MODE) == 3)
         return 0xff;
     if (0xfe00 <= addr && addr < 0xfea0 &&
-        (cpu->master->io[LCDC] & LCDC_ENABLE) &&
-        (cpu->master->io[STAT] & STAT_MODE) >= 2)
+        (((cpu->master->io[LCDC] & LCDC_ENABLE) &&
+          (cpu->master->io[STAT] & STAT_MODE) >= 2) ||
+         cpu->master->dma_active))
         return 0xff;
 
     return read8(cpu->master, addr);
@@ -656,8 +656,9 @@ void cpu_write8(struct sm83* cpu, u16 addr, u8 data) {
         (cpu->master->io[STAT] & STAT_MODE) == 3)
         return;
     if (0xfe00 <= addr && addr < 0xfea0 &&
-        (cpu->master->io[LCDC] & LCDC_ENABLE) &&
-        (cpu->master->io[STAT] & STAT_MODE) >= 2)
+        (((cpu->master->io[LCDC] & LCDC_ENABLE) &&
+          (cpu->master->io[STAT] & STAT_MODE) >= 2) ||
+         cpu->master->dma_active))
         return;
 
     write8(cpu->master, addr, data);
