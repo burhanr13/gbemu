@@ -378,8 +378,8 @@ void gb_m_cycle(struct gb* gb) {
         update_joyp(gb);
         if (!(gb->io[KEY1] & (1 << 7)) || i % 2 == 0) {
             ppu_clock(&gb->ppu);
-            apu_clock(&gb->apu);
         }
+        apu_clock(&gb->apu);
         if (gb->hdma_active && i % 2 == 0 &&
             (!(gb->io[KEY1] & (1 << 7)) || i % 4 == 0)) {
             run_hdma(gb);

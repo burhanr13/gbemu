@@ -54,7 +54,9 @@ void apu_clock(struct gb_apu* apu) {
                             (apu->ch3_enable ? 0b0100 : 0) |
                             (apu->ch4_enable ? 0b1000 : 0);
 
-    if (apu->master->div % gbemu.speed == 0) {
+    int effective_speed = gbemu.speed;
+    if (apu->master->io[KEY1] & (1 << 7)) effective_speed *= 2;
+    if (apu->master->div % effective_speed == 0) {
         apu->global_counter++;
 
         if (apu->global_counter % 2 == 0) {
