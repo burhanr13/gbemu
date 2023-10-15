@@ -10,6 +10,22 @@
 #include "ppu.h"
 #include "sm83.h"
 
+void center_screen_in_window(SDL_Rect* dst) {
+    int windowW, windowH;
+    SDL_GetWindowSize(gbemu.main_window, &windowW, &windowH);
+    if (windowW > windowH) {
+        dst->h = windowH;
+        dst->y = 0;
+        dst->w = dst->h * GB_SCREEN_W / GB_SCREEN_H;
+        dst->x = (windowW - dst->w) / 2;
+    } else {
+        dst->w = windowW;
+        dst->x = 0;
+        dst->h = dst->w * GB_SCREEN_H / GB_SCREEN_W;
+        dst->y = (windowH - dst->h) / 2;
+    }
+}
+
 int main(int argc, char** argv) {
     if (argc < 2) {
         printf("pass rom file name as argument\n");
@@ -49,21 +65,8 @@ int main(int argc, char** argv) {
         }
 
         SDL_RenderClear(gbemu.main_renderer);
-        int windowW, windowH;
-        SDL_GetWindowSize(gbemu.main_window, &windowW, &windowH);
         SDL_Rect dst;
-        if (windowW > windowH) {
-            dst.h = windowH;
-            dst.y = 0;
-            dst.w = dst.h * GB_SCREEN_W / GB_SCREEN_H;
-            dst.x = (windowW - dst.w) / 2;
-        } else {
-            dst.w = windowW;
-            dst.x = 0;
-            dst.h = dst.w * GB_SCREEN_H / GB_SCREEN_W;
-            dst.y = (windowH - dst.h) / 2;
-        }
-
+        center_screen_in_window(&dst);
         SDL_RenderCopy(gbemu.main_renderer, gbemu.gb_screen, NULL, &dst);
         SDL_RenderPresent(gbemu.main_renderer);
 
