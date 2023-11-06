@@ -15,7 +15,7 @@ An emulator for the Game Boy and Game Boy Color. Most games should be playable w
 - Game Boy Color support
 - real time clock for MBC3
 - save states with compression by zlib
-- cycle accuracy - passes most of the mooneye test suite
+- cycle accurate CPU - passes most of the mooneye test suite
 
 ### Todo:
 - other MBCs
